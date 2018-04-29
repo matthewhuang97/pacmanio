@@ -8,13 +8,17 @@ def handler(conn, lock, shared_data):
         print('hello', conn)
         try:
             print('trying to recv...')
-            msg = conn.recv(1)
+            msg = conn.recv(1024)
         except:
             print('exception')
             sys.exit()
             thread.exit()
 
         print('received', msg)
+
+        if len(msg) == 0:
+            thread.exit()
+
 
         # header = unpack(header_fmt, msg[:header_len])
         # body_packed = msg[header_len:]

@@ -5,6 +5,7 @@ import socket
 from struct import *
 import _thread as thread
 
+
 def movement():
     print('movement')
 
@@ -16,17 +17,20 @@ def on_press(key):
     if key == Key.esc:
         quit()
 
-    try:
-        char = key.char
-        if char == 'a':
-            movement()
-    except:
-        pass
+    # print('??')
+
+    # try:
+    #     char = key.char
+    #     if char == 'a':
+    #         movement()
+    # except:
+    #     pass
+
+    print(key.char)
 
     try:
         print(sock)
-        sock.send('asdf')
-        # sock.send(pack('!s', key.char))
+        sock.send(pack('!s', (key.char).encode('utf-8')))
     except:
         print('ERROR: connection down')
         quit()
@@ -40,6 +44,7 @@ def main():
     port = sys.argv[2]
     global sock
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 
     try:
         port = int(port)
