@@ -53,8 +53,8 @@ def on_press(key):
     except:
         pass
 
-def get_response(sock):
-    """Waits for a server response and handles it if it gets one.
+def handler(sock):
+    """Waits for server responses and handles it if it gets one.
 
     Args:
         sock: The socket object on which to wait for a message.
@@ -62,7 +62,6 @@ def get_response(sock):
     Side effects:
         The appropriate function to handle the message is called.
     """
-    # wait for a single server response...
     while True:
         try:
             msg = sock.recv(1024)
@@ -105,7 +104,7 @@ def main():
     print(f'Successfully connected to {host}:{port}!')
 
     player_username = client_send.initialize_player(sock)
-    thread.start_new_thread(get_response, (sock,))
+    thread.start_new_thread(handler, (sock,))
 
     # Collect keypress events once the game begins
     with Listener(on_press=on_press) as listener:
