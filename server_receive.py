@@ -2,7 +2,7 @@ import server_send
 import game
 
 def create_request(conn, body, shared_data):
-    username = body.decode('utf-8')
+    username = body.decode('utf-8').strip()
 
     if username in shared_data['game'].players.keys():
         # User already exists
