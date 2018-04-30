@@ -24,6 +24,8 @@ class Game:
             try:
                 if x.username == username:
                     return 'X' # print an X for the current player
+                else:
+                    return str(x)
             except:
                 return str(x)
 
