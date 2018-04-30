@@ -29,6 +29,7 @@ class Game:
 
         for row in self.board:
             str_of_row = [print_square(x) if x != '\n' else '' for x in row]
+            print(str_of_row)
             string_row = ''.join(str_of_row)
             string_of_board.append(string_row)
 
