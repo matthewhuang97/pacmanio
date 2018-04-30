@@ -97,15 +97,15 @@ class Player:
         self.position = pos
 
     def next(self, direction):
-        x, y = self.position # # most definitely bad design lol fix this later
+        row, col = self.position # # most definitely bad design lol fix this later
         if direction == UP:
-            next_square = (x, y + 1)
+            next_square = (row - 1, col)
         elif direction == DOWN:
-            next_square = (x, y - 1)
+            next_square = (row + 1, col)
         elif direction == LEFT:
-            next_square = (x - 1, y)
+            next_square = (row, col - 1)
         elif direction == RIGHT:
-            next_square = (x + 1, y)
+            next_square = (row, col + 1)
         return next_square
 
     def move(self, direction):
