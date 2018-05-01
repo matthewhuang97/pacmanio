@@ -1,6 +1,7 @@
 from enum import Enum
 import random
 import curses
+from operator import itemgetter
 import copy
 import pdb
 
@@ -39,10 +40,21 @@ class Game:
                     # else:
                         # self.board[r][c] = LITTLE_DOT
 
+    def draw_leaderboard(self, scr):
+        sorted_leaderboard = sorted(self.leaderboard.items(), key=itemgetter(1))
+
+        for i, (username, points) in enumerate(sorted_leaderboard):
+            display_string = "{} : {} points".format(username, points)
+            scr.addstr(self.num_rows+i, 0, display_string)
+
+
     def draw_board(self, scr):
         for r in range(self.num_rows):
             for c in range(self.num_cols):
                 scr.addstr(r,c,str(self.board[r][c]))
+
+        self.draw_leaderboard(scr)
+        
 
 
     def random_empty_location(self):
@@ -74,27 +86,39 @@ class Game:
             return False
 
         row, col = pos
-        if self.board[row][col] == EMPTY:
+        square = self.board[row][col]
+        if square == EMPTY:
             return 0
-        elif self.board[row][col] == LITTLE_DOT:
+        elif square == LITTLE_DOT:
             return 1
-        elif self.board[row][col] == BIG_DOT:
+        elif square == BIG_DOT:
             return 10
+        elif isinstance(square, Player):
+            # TODO: Right now, the "earlier" player in the leaderboard kills the later one.
+            square.alive = False
+            return 100
 
         return False
 
+    def process_squares(self, old, new, player):
+        if new == BIG_DOT:
+            player.superspeed_ticks = 5
+
+
     def move_player(self, player):
-        row, col = player.position # most definitely bad design lol fix this later
-        new_pos = direction_to_lambda[player.direction]((row, col))
+        if player.alive:
+            row, col = player.position # most definitely bad design lol fix this later
+            new_pos = direction_to_lambda[player.direction]((row, col))
 
-        score = self.position_can_move_to(new_pos)
-        if score is not False:
-            player.position = new_pos
-            new_row, new_col = new_pos
+            score = self.position_can_move_to(new_pos)
+            if score is not False:
+                player.position = new_pos
+                new_row, new_col = new_pos
 
-            self.board[row][col] = EMPTY
-            self.board[new_row][new_col] = player
-            self.leaderboard[player] += score
+                self.process_squares(self.board[row][col], self.board[new_row][new_col], player)
+                self.board[row][col] = EMPTY
+                self.board[new_row][new_col] = player
+                self.leaderboard[player] += score
 
     def remove_player(self, player):
         row, col = player.position
@@ -104,6 +128,11 @@ class Game:
     def tick(self):
         for player in self.leaderboard:
             self.move_player(player)
+            if player.superspeed_ticks > 0:
+                self.move_player(player)
+                player.superspeed_ticks -= 1
+
+
 
 
 class Player:
@@ -112,22 +141,16 @@ class Player:
         self.username = username
         self.position = pos
         self.direction = 'd'
+        self.superspeed_ticks = 0
+        self.alive = True
 
     def change_direction(self, direction):
         assert direction in direction_to_lambda, 'Invalid direction'
         self.direction = direction
 
-    def __repr__(self):
+    def __str__(self):
         return self.username[0]
 
-
-def run_screen(stdscr):
-    # Clear screen
-    stdscr.clear()
-    # Proceed with your program
-    stdscr.refresh()
-    stdscr.getkey()
-    print("Running some program")
 
 # def main():
     # game = load_new_game()
