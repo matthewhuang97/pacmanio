@@ -17,6 +17,10 @@ def make_move(move_char, username, conn):
         msg = move_char
         send_to_server(b'\x02', msg.encode('utf-8'), conn)
 
+def restart_player(username, conn):
+    send_to_server(b'\x03', padded(username).encode('utf-8'), conn)
+
+
 def send_to_server(opcode, body, conn):
     """Sends a message to server.
 

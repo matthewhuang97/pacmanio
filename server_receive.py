@@ -1,4 +1,5 @@
 import server_send
+import pdb
 
 def create_request(conn, body, game, client_to_player):
     username = body.decode('utf-8').strip()
@@ -14,6 +15,13 @@ def create_request(conn, body, game, client_to_player):
     client_to_player[conn] = player
     server_send.create_success(conn, username, game)
     print('New player successfully created')
+
+def restart_request(conn, body, game, client_to_player):
+    player = client_to_player[conn]
+
+    game.restart_player(player)
+
+    server_send.restart_success(conn, game)
 
 
 def move_request(conn, body, game, client_to_player):

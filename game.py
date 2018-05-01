@@ -107,9 +107,22 @@ class Game:
         if new == BIG_DOT:
             player.superspeed_ticks = 10
 
+    def restart_player(self, player):
+        old_r, old_c = player.position
+        self.board[old_r][old_c] = EMPTY
+
+        new_r, new_c = self.random_empty_location()
+        self.board[new_r][new_c] = player
+        player.position = new_r, new_c
+
+        # Reset to zero
+        self.leaderboard[player] = 0
+        player.alive = True
+
 
     def move_player(self, player):
-        if player.alive:
+        n_moves = 2 if player.superspeed_ticks > 0 else 1
+        for _ in range(n_moves):
             row, col = player.position # most definitely bad design lol fix this later
             new_pos = direction_to_lambda[player.direction]((row, col))
 
@@ -130,10 +143,10 @@ class Game:
 
     def tick(self):
         for player in self.leaderboard:
-            self.move_player(player)
-            if player.superspeed_ticks > 0:
+            if player.alive:
                 self.move_player(player)
-                player.superspeed_ticks -= 1
+                if player.superspeed_ticks > 0:
+                    player.superspeed_ticks -= 1
 
         if self.n_big_dots < 10:
             self.fill_board_with_dots()

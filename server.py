@@ -13,6 +13,7 @@ header_len = calcsize(header_fmt)
 opcode_to_function = {
     b'\x01': server_receive.create_request,
     b'\x02': server_receive.move_request,
+    b'\x03': server_receive.restart_request,
 }
 
 client_to_player = {}

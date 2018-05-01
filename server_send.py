@@ -20,6 +20,8 @@ def create_success(conn, username, game_state):
 
     send_to_client(conn, b'\x02', username.encode('utf-8'))
 
+def restart_success(conn, game):
+    send_to_client(conn, b'\x04', pickle.dumps(game))
 
 def send_game(conn, game):
     send_to_client(conn, b'\x03', pickle.dumps(game))

@@ -56,6 +56,12 @@ def game_state(encoded_game, shared_data):
 
 def lost_game(body, shared_data):
     scr = shared_data['scr']
-    scr.addstr("\nYou have died. Goodbye.")
+    scr.addstr("\nYou have died. Goodbye. You can exit with CTRL + C, or press r to resume.")
     scr.refresh()
+
+def restart_success(body, shared_data):
+    game_state(body, shared_data)
+
+
+
 

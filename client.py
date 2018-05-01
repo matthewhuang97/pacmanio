@@ -13,7 +13,7 @@ recv_opcodes = {
     b'\x00': client_receive.general_failure,
     b'\x02': client_receive.create_success,
     b'\x03': client_receive.game_state,
-    b'\x04': client_receive.lost_game,
+    b'\x04': client_receive.restart_success,
 }
 
 # header protocol: See README for more details
@@ -26,7 +26,7 @@ shared_data = {}
 
 
 def quit():
-    os.system('stty echo')
+    # os.system('stty echo')
     os.kill(os.getpid(), signal.SIGINT)
 
 
@@ -36,6 +36,8 @@ def on_press(key):
         quit()
     try:
         char = key.char
+        if char == 'r':
+            client_send.restart_player(shared_data['username'], sock)
     except:
         return
     client_send.make_move(char, shared_data['username'], sock)
