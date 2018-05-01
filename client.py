@@ -54,10 +54,10 @@ def run_screen(stdscr):
     # Clear screen
     stdscr.clear()
     while True:
-        stdscr.clear()
+        # stdscr.clear()
         receive_message()
         stdscr.refresh()
-        
+
 
 def enter_game():
     thread.start_new_thread(listener, ())
@@ -76,7 +76,7 @@ def menu():
 
 def receive_message():
     try:
-        msg = sock.recv(2048)
+        msg = sock.recv(4096)
     except:
         # close the client if the connection is down
         print('ERROR: connection down')

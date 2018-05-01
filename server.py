@@ -18,7 +18,7 @@ opcode_to_function = {
 
 client_to_player = {}
 
-SECS_PER_TICK = 0.2
+SECS_PER_TICK = 0.05
 
 def game_handler(lock, game):
     while True:
@@ -35,12 +35,13 @@ def disconnect(conn, lock, game):
     print('Disconnecting player...')
     with lock:
         game.remove_player(client_to_player[conn])
+        del client_to_player[conn]
     thread.exit()
 
 def client_handler(conn, lock, game):
     while True:
         try:
-            msg = conn.recv(2048)
+            msg = conn.recv(4096)
         except:
             disconnect(conn, lock, game)
 

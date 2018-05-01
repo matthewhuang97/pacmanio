@@ -13,7 +13,6 @@ direction_to_lambda = {
 }
 
 WALL = 'O'
-PLAYER = 'X'
 EMPTY = ' '
 LITTLE_DOT = '.'
 BIG_DOT = 'o'
@@ -21,9 +20,9 @@ BIG_DOT = 'o'
 class Game:
     def __init__(self):
         self.board = []
-        with open('board.txt', 'r') as f:
+        with open('board2.txt', 'r') as f:
             for line in f:
-                self.board.append(list(line))
+                self.board.append(list(line.rstrip('\n')))
         self.num_rows = len(self.board)
         self.num_cols = len(self.board[0])
         self.n_big_dots = 0
@@ -31,6 +30,8 @@ class Game:
 
         # map from player object to their score
         self.leaderboard = {}
+        # game time
+        self.ticks = 0
 
     def fill_board_with_dots(self):
         for r in range(self.num_rows):
@@ -49,15 +50,22 @@ class Game:
             display_string = "{} : {} points".format(username, points)
             scr.addstr(self.num_rows+i, 0, display_string)
 
-
+    # Print stretching out column-wise by factor of 2, length-wise by factor of 3
     def draw_board(self, scr):
         for r in range(self.num_rows):
             for c in range(self.num_cols):
-                scr.addstr(r,c,str(self.board[r][c]))
+                char_print = str(self.board[r][c])
+                if self.board[r][c] == WALL:
+                    # Yes, that's a wall
+                    char_print = chr(9608)
 
+                for i in range(2):
+                    for j in range(3):
+                        scr.addstr(r * 2 + i, c * 3 + j, char_print)
+
+    def draw_screen(self, scr):
+        self.draw_board(scr)
         self.draw_leaderboard(scr)
-        
-
 
     def random_empty_location(self):
         while True:
@@ -72,6 +80,11 @@ class Game:
         self.leaderboard[new_player] = 0
         self.board[r][c] = new_player
         return new_player
+
+    def wrap_pos(self, pos):
+        row, col = pos
+        print(self.num_cols)
+        return (row % self.num_rows, col % self.num_cols)
 
     # Check if position is in bounds
     def position_is_valid(self, pos):
@@ -121,20 +134,22 @@ class Game:
 
 
     def move_player(self, player):
-        n_moves = 2 if player.superspeed_ticks > 0 else 1
-        for _ in range(n_moves):
-            row, col = player.position # most definitely bad design lol fix this later
-            new_pos = direction_to_lambda[player.direction]((row, col))
+        if player.superspeed_ticks == 0 and self.ticks % 2 == 1:
+            return
 
-            score = self.position_can_move_to(player,new_pos)
-            if score is not False:
-                player.position = new_pos
-                new_row, new_col = new_pos
+        row, col = player.position # most definitely bad design lol fix this later
+        new_pos = direction_to_lambda[player.direction]((row, col))
+        new_pos = self.wrap_pos(new_pos)
 
-                self.process_squares(self.board[row][col], self.board[new_row][new_col], player)
-                self.board[row][col] = EMPTY
-                self.board[new_row][new_col] = player
-                self.leaderboard[player] += score
+        score = self.position_can_move_to(player, new_pos)
+        if score is not False:
+            player.position = new_pos
+            new_row, new_col = new_pos
+
+            self.process_squares(self.board[row][col], self.board[new_row][new_col], player)
+            self.board[row][col] = EMPTY
+            self.board[new_row][new_col] = player
+            self.leaderboard[player] += score
 
     def remove_player(self, player):
         row, col = player.position
@@ -151,7 +166,7 @@ class Game:
         if self.n_big_dots < 10:
             self.fill_board_with_dots()
 
-
+        self.ticks += 1
 
 
 class Player:
