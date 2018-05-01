@@ -55,7 +55,6 @@ def run_screen(stdscr):
     # Clear screen
     stdscr.clear()
     while True:
-        # stdscr.clear()
         receive_message()
         stdscr.refresh()
 

@@ -34,6 +34,8 @@ class Colors(IntEnum):
     RED = 1
     YELLOW = 2
     BLUE = 3
+    CYAN = 4
+    MAGENTA = 5
 
 class Game:
     def __init__(self):
@@ -56,6 +58,8 @@ class Game:
         curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
 
     def fill_board_with_dots(self):
         for r in range(self.num_rows):
@@ -84,16 +88,26 @@ class Game:
 
                 if square == WALL:
                     char_print = BLOCK
+                elif square == BIG_DOT:
+                    char_print = BLOCK
+                    color = Colors.CYAN
                 elif isinstance(square, Player):
                     char_print = BLOCK
                     if square.username == curr_username:
-                        color = Colors.YELLOW
+                        if square.superspeed_ticks:
+                            color = Colors.BLUE
+                        else:
+                            color = Colors.YELLOW
                     else:
-                        color = Colors.RED
+                        if square.superspeed_ticks:
+                            color = Colors.RED
+                        else:
+                            color = Colors.MAGENTA
 
                 for i in range(2):
                     for j in range(3):
-                        scr.addstr(r * 2 + i, c * 3 + j, char_print, curses.color_pair(int(color)))
+                        scr.addstr(r * 2 + i, c * 3 + j, char_print,
+                            curses.color_pair(int(color)) | curses.A_BLINK)
 
     def draw_screen(self, scr, curr_username):
         self.draw_board(scr, curr_username)
