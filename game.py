@@ -154,8 +154,8 @@ class Game:
         elif square == BIG_DOT:
             return True, 10
         elif isinstance(square, Player):
-            if player.superspeed_ticks > 0:
-            # TODO: Right now, the "earlier" player in the leaderboard kills the later one.
+            # TODO: Right now, can't kill each other if both supersped
+            if player.superspeed_ticks > 0 and square.superspeed_ticks == 0:
                 square.alive = False
                 return True, 100
 
