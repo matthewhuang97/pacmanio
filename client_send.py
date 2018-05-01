@@ -1,6 +1,7 @@
 from struct import pack
 
 version = b'\x01'
+valid_keys = ['w', 'a', 's', 'd']
 
 MAX_LENGTH = 5
 
@@ -8,10 +9,13 @@ def padded(string):
     len_to_pad = MAX_LENGTH - len(string)
     return string + ' ' * len_to_pad
 
-def initialize_player(sock):
-    username = input('Welcome to Pacman.io! Enter a username (max 5 chars)\n')
-    send_to_server(b'\x01', padded(username).encode('utf-8'), sock)
+def initialize_player(username, conn):
+    send_to_server(b'\x01', padded(username).encode('utf-8'), conn)
 
+def make_move(move_char, username, conn):
+    if move_char in valid_keys:
+        msg = move_char
+        send_to_server(b'\x02', msg.encode('utf-8'), conn)
 
 def send_to_server(opcode, body, conn):
     """Sends a message to server.
@@ -31,13 +35,12 @@ def send_to_server(opcode, body, conn):
 
     """
     header = version + pack('!I', len(body)) + opcode
-    message = header + body
+    msg = header + body
 
     try:
-        conn.send(message)
+        conn.send(msg)
     except:
         # close the client if the connection is down
         print('ERROR: connection down')
-        thread.exit()
-        sys.exit()
-    return
+        os.system('stty echo')
+        os.kill(os.getpid(), signal.SIGINT)

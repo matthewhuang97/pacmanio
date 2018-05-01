@@ -1,144 +1,139 @@
+from enum import Enum
 import random
 import curses
 import copy
 import pdb
 
-UP = 'w'
-DOWN = 's'
-LEFT = 'a'
-RIGHT = 'd'
+direction_to_lambda = {
+    'w': lambda pos: (pos[0] - 1, pos[1]),
+    's': lambda pos: (pos[0] + 1, pos[1]),
+    'a': lambda pos: (pos[0], pos[1] - 1),
+    'd': lambda pos: (pos[0], pos[1] + 1),
+}
+
+WALL = 'O'
+PLAYER = 'X'
+EMPTY = ' '
+LITTLE_DOT = '.'
+BIG_DOT = 'o'
+
 class Game:
-    def __init__(self, board):
-        self.wall = 'O'
-        self.empty = ' '
-        self.player = 'X'
-        self.num_rows = len(board)
-        self.num_cols = len(board[0])
-        self.board = board
-        self.players = {}
+    def __init__(self):
+        self.board = []
+        with open('board.txt', 'r') as f:
+            for line in f:
+                self.board.append(list(line))
+        self.num_rows = len(self.board)
+        self.num_cols = len(self.board[0])
+        self.fill_board_with_dots()
 
-    def pack_board(self, username):
-        string_of_board = []
+        # map from player object to their score
+        self.leaderboard = {}
 
-        def print_square(x):
-            try:
-                if x.username == username:
-                    return 'X' # print an X for the current player
-                else:
-                    return str(x)
-            except:
-                return str(x)
-
-        for row in self.board:
-            str_of_row = [print_square(x) if x != '\n' else '' for x in row]
-            string_row = ''.join(str_of_row)
-            string_of_board.append(string_row)
-
-        final_string = ','.join(string_of_board)
-        return final_string.encode('utf-8')
+    def fill_board_with_dots(self):
+        for r in range(self.num_rows):
+            for c in range(self.num_cols):
+                if self.board[r][c] == EMPTY:
+                    if random.randint(1, 100) <= 3:
+                        self.board[r][c] = BIG_DOT
+                    # else:
+                        # self.board[r][c] = LITTLE_DOT
 
     def print_board(self):
-        for row in self.board:
-            for sq in row:
-                print(sq, end='')
+        for r in range(self.num_rows):
+            for c in range(self.num_cols):
+                print(self.board[r][c], end='')
 
     def random_empty_location(self):
         while True:
             r = random.randint(0, self.num_rows - 1)
             c = random.randint(0, self.num_cols - 1)
-            if self.board[r][c] == self.empty:
+            if self.board[r][c] == EMPTY:
                 return (r, c)
 
     def spawn_player(self, username):
         r, c = self.random_empty_location()
-        new_player = Player(username, (r,c))
-        self.players[username] = new_player
+        new_player = Player(self, username, (r,c))
+        self.leaderboard[new_player] = 0
         self.board[r][c] = new_player
+        return new_player
 
-    def start_game(self):
-        self.spawn_player()
-        self.print_board()
+    # Check if position is in bounds
+    def position_is_valid(self, pos):
+        row, col = pos
 
-    def is_valid(self, player, move):
-        row, col = player.next(move)
-
-        # Check if out of bounds
+        # Check if out of bounds, or collision
         if (col >= self.num_cols or col < 0 or row >= self.num_rows or row < 0):
             return False
-
-        # Check if wall
-        if self.board[row][col] == 'O':
-            return False
-
         return True
 
+    # If movable, return number of points from moving to that location
+    def position_can_move_to(self, pos):
+        if not self.position_is_valid(pos):
+            return False
 
-    def update_state(self, player, move):
-        if self.is_valid(player, move):
-            # update the game board
-            prev_r, prev_c = player.position
+        row, col = pos
+        if self.board[row][col] == EMPTY:
+            return 0
+        elif self.board[row][col] == LITTLE_DOT:
+            return 1
+        elif self.board[row][col] == BIG_DOT:
+            return 10
 
-            new_r, new_c = player.next(move)
+        return False
 
-            self.board[prev_r][prev_c] = self.empty
-            self.board[new_r][new_c] = player
+    def move_player(self, player):
+        row, col = player.position # most definitely bad design lol fix this later
+        new_pos = direction_to_lambda[player.direction]((row, col))
 
-            # move the player's position 
-            player.move(move)
-        else:
-            # probably raise a custom exception
-            pass
+        score = self.position_can_move_to(new_pos)
+        if score is not False:
+            player.position = new_pos
+            new_row, new_col = new_pos
+
+            self.board[row][col] = EMPTY
+            self.board[new_row][new_col] = player
+            self.leaderboard[player] += score
+
+    def remove_player(self, player):
+        row, col = player.position
+        self.board[row][col] = EMPTY
+        del self.leaderboard[player]
+
+    def tick(self):
+        for player in self.leaderboard:
+            self.move_player(player)
+
 
 class Player:
-    def __init__(self, username, pos):
+    def __init__(self, game, username, pos):
+        self.game = game
         self.username = username
         self.position = pos
+        self.direction = 'd'
 
-    def set_position(self, pos):
-        self.position = pos
+    def change_direction(self, direction):
+        assert direction in direction_to_lambda, 'Invalid direction'
+        self.direction = direction
 
-    def next(self, direction):
-        row, col = self.position # # most definitely bad design lol fix this later
-        if direction == UP:
-            next_square = (row - 1, col)
-        elif direction == DOWN:
-            next_square = (row + 1, col)
-        elif direction == LEFT:
-            next_square = (row, col - 1)
-        elif direction == RIGHT:
-            next_square = (row, col + 1)
-        return next_square
-
-    def move(self, direction):
-        self.position = self.next(direction) # validation is done by the game idk if that's good
-
-
-    def __str__(self):
+    def __repr__(self):
         return self.username[0]
 
 
-# def run_screen(stdscr):
-#     # Clear screen
-#     stdscr.clear()
-#     # Proceed with your program
-#     stdscr.refresh()
-#     stdscr.getkey()
-#     print("Running some program")
+def run_screen(stdscr):
+    # Clear screen
+    stdscr.clear()
+    # Proceed with your program
+    stdscr.refresh()
+    stdscr.getkey()
+    print("Running some program")
 
 # def main():
 #     curses.wrapper(run_screen)
 
-def load_new_game():
-    board = []
-    with open('board.txt', 'r') as f:
-        for line in f:
-            board.append(list(line))
-    game = Game(board)
-    return game
+# def main():
+    # game = load_new_game()
+    # game.start_game()
 
-def main():
-    game = load_new_game()
-    game.start_game()
-
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+    # main()

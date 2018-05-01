@@ -1,11 +1,13 @@
+import pdb
 import game
 from struct import *
-import pdb
+import _thread as thread
+import pickle
+
 MAX_LENGTH = 5
 
 def print_client_board(packed_board):
     board = packed_board.split(',')
-
     for row in board:
         print(row)
 
@@ -35,20 +37,18 @@ def create_success(body, shared_data):
         Logs into the account of the user who was just created.
         Updates dictionary of shared data so the client knows which user it is.
     """
-    offset = calcsize('!II')
-    pdb.set_trace()
-    player_position = body[:offset]
-    rest_of_body = body[offset:].decode('utf-8')
-    username = rest_of_body[:MAX_LENGTH].strip()
-    board = rest_of_body[MAX_LENGTH:]
 
+    # offset = calcsize('!II')
+    # TODO: Do we need this?
+    # player_position = body[:offset]
+
+    username = body.decode('utf-8').strip()
     shared_data['username'] = username
     print(f'Player creation successful: {username}')
     print('You have joined the game. Move with the wasd keys.')
 
-    print_client_board(board)
+    return True
 
-
-def move_success(body, shared_data):
-    board = body.decode('utf-8')
-    print_client_board(board)
+def game_state(encoded_game, shared_data):
+    game = pickle.loads(encoded_game)
+    game.print_board()

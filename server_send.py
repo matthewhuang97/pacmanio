@@ -1,8 +1,10 @@
 from struct import pack
-version = b'\x01'
 import pdb
+import pickle
 
-def create_success(conn, username, shared_data):
+version = b'\x01'
+
+def create_success(conn, username, game_state):
     """Send message of successful account creation to client.
 
     Args:
@@ -16,21 +18,12 @@ def create_success(conn, username, shared_data):
         (string) of the account username (unsigned int) that has been created.
     """
 
-    # Should probably send the entire game... but it's a pain..
-    game_state = shared_data['game']
-    board = game_state.board
+    send_to_client(conn, b'\x02', username.encode('utf-8'))
 
-    print(board)
-    packed_board = game_state.pack_board(username) # there's a bug where packed board isn't working on the second person idk why
 
-    player_position = game_state.players[username].position
-    encoded_position = pack('II', player_position[0], player_position[1])
+def send_game(conn, game):
+    send_to_client(conn, b'\x03', pickle.dumps(game))
 
-    encoded_username = username.encode('utf-8')
-
-    body = encoded_position + encoded_username + packed_board
-
-    send_to_client(conn, b'\x02', body)
 
 def general_failure(conn, err_msg):
     """Handle a general failure and send message to client.
@@ -46,12 +39,6 @@ def general_failure(conn, err_msg):
     """
     err_send = err_msg.encode('utf-8')
     send_to_client(conn, b'\x00', err_send)
-
-def move_success(conn, username, shared_data):
-    g = shared_data['game']
-    packed_game = g.pack_board(username)
-    print('move success!')
-    send_to_client(conn, b'\x03', packed_game)
 
 
 def send_to_client(conn, opcode, body):
@@ -70,4 +57,7 @@ def send_to_client(conn, opcode, body):
         - body: body of message
     """
     header = version + pack('!I', len(body)) + opcode
-    conn.send(header + body)
+    try:
+        conn.send(header + body)
+    except:
+        pass
