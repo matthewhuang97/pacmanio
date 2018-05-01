@@ -43,15 +43,21 @@ def on_press(key):
 def listener():
     # Collect keypress events once the game begins
     with Listener(on_press=on_press) as listener:
-        print('listener init')
         os.system('stty -echo')
         listener.join()
 
+def run_screen(stdscr):
+    shared_data['scr'] = stdscr
+    # Clear screen
+    stdscr.clear()
+    while True:
+        receive_message()
+        stdscr.refresh()
+        
 
 def enter_game():
     thread.start_new_thread(listener, ())
-    while True:
-        receive_message()
+    curses.wrapper(run_screen)
 
 
 def menu():

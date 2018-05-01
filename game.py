@@ -39,10 +39,11 @@ class Game:
                     # else:
                         # self.board[r][c] = LITTLE_DOT
 
-    def print_board(self):
+    def draw_board(self, scr):
         for r in range(self.num_rows):
             for c in range(self.num_cols):
-                print(self.board[r][c], end='')
+                scr.addstr(r,c,str(self.board[r][c]))
+
 
     def random_empty_location(self):
         while True:
@@ -127,9 +128,6 @@ def run_screen(stdscr):
     stdscr.refresh()
     stdscr.getkey()
     print("Running some program")
-
-# def main():
-#     curses.wrapper(run_screen)
 
 # def main():
     # game = load_new_game()

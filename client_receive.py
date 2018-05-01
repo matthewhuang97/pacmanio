@@ -38,10 +38,6 @@ def create_success(body, shared_data):
         Updates dictionary of shared data so the client knows which user it is.
     """
 
-    # offset = calcsize('!II')
-    # TODO: Do we need this?
-    # player_position = body[:offset]
-
     username = body.decode('utf-8').strip()
     shared_data['username'] = username
     print(f'Player creation successful: {username}')
@@ -51,4 +47,4 @@ def create_success(body, shared_data):
 
 def game_state(encoded_game, shared_data):
     game = pickle.loads(encoded_game)
-    game.print_board()
+    game.draw_board(shared_data['scr'])
