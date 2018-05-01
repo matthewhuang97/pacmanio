@@ -13,6 +13,7 @@ recv_opcodes = {
     b'\x00': client_receive.general_failure,
     b'\x02': client_receive.create_success,
     b'\x03': client_receive.game_state,
+    b'\x04': client_receive.lost_game,
 }
 
 # header protocol: See README for more details
@@ -43,7 +44,7 @@ def on_press(key):
 def listener():
     # Collect keypress events once the game begins
     with Listener(on_press=on_press) as listener:
-        os.system('stty -echo')
+        # os.system('stty -echo')
         listener.join()
 
 def run_screen(stdscr):
@@ -51,6 +52,7 @@ def run_screen(stdscr):
     # Clear screen
     stdscr.clear()
     while True:
+        stdscr.clear()
         receive_message()
         stdscr.refresh()
         

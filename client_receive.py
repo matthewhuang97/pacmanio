@@ -48,3 +48,14 @@ def create_success(body, shared_data):
 def game_state(encoded_game, shared_data):
     game = pickle.loads(encoded_game)
     game.draw_board(shared_data['scr'])
+
+    # TODO: get rid of this gross thing
+    for player in game.leaderboard:
+        if player.username == shared_data['username'] and not player.alive:
+            lost_game('', shared_data)
+
+def lost_game(body, shared_data):
+    scr = shared_data['scr']
+    scr.addstr("\nYou have died. Goodbye.")
+    scr.refresh()
+

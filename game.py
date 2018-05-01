@@ -151,6 +151,9 @@ class Player:
     def __str__(self):
         return self.username[0]
 
+    def __repr__(self):
+        return self.username
+
 
 # def main():
     # game = load_new_game()
