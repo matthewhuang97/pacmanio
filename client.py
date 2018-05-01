@@ -26,7 +26,7 @@ shared_data = {}
 
 
 def quit():
-    # os.system('stty echo')
+    os.system('stty echo')
     os.kill(os.getpid(), signal.SIGINT)
 
 
@@ -46,7 +46,7 @@ def on_press(key):
 def listener():
     # Collect keypress events once the game begins
     with Listener(on_press=on_press) as listener:
-        # os.system('stty -echo')
+        os.system('stty -echo')
         listener.join()
 
 def run_screen(stdscr):
