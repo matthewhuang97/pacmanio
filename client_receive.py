@@ -4,13 +4,6 @@ from struct import *
 import _thread as thread
 import pickle
 
-MAX_LENGTH = 5
-
-def print_client_board(packed_board):
-    board = packed_board.split(',')
-    for row in board:
-        print(row)
-
 def general_failure(body, shared_data):
     """Handles failure messsages from the server.
 
@@ -47,7 +40,12 @@ def create_success(body, shared_data):
 
 def game_state(encoded_game, shared_data):
     game = pickle.loads(encoded_game)
-    game.draw_screen(shared_data['scr'])
+
+    if 'game_initialized' not in shared_data:
+        shared_data['screen_initialized'] = True
+        game.init_curses()
+
+    game.draw_screen(shared_data['scr'], shared_data['username'])
 
     # TODO: get rid of this gross thing
     for player in game.leaderboard:

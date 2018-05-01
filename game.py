@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 import random
 import curses
 from operator import itemgetter
@@ -12,10 +12,28 @@ direction_to_lambda = {
     'd': lambda pos: (pos[0], pos[1] + 1),
 }
 
+def opposite_direction(d):
+    if d == 'w':
+        return 's'
+    if d == 's':
+        return 'w'
+    if d == 'a':
+        return 'd'
+    if d == 'd':
+        return 'a'
+
 WALL = 'O'
 EMPTY = ' '
 LITTLE_DOT = '.'
 BIG_DOT = 'o'
+# Looks like: █!
+BLOCK = chr(9608)
+
+class Colors(IntEnum):
+    BLACK = 0
+    RED = 1
+    YELLOW = 2
+    BLUE = 3
 
 class Game:
     def __init__(self):
@@ -33,6 +51,12 @@ class Game:
         # game time
         self.ticks = 0
 
+    def init_curses(self):
+        # Default pair 0: white on black
+        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
+
     def fill_board_with_dots(self):
         for r in range(self.num_rows):
             for c in range(self.num_cols):
@@ -43,29 +67,37 @@ class Game:
                     # else:
                         # self.board[r][c] = LITTLE_DOT
 
-    def draw_leaderboard(self, scr):
+    def draw_leaderboard(self, scr, curr_username):
         sorted_leaderboard = sorted(self.leaderboard.items(), key=itemgetter(1))
 
         for i, (username, points) in enumerate(sorted_leaderboard):
             display_string = "{} : {} points".format(username, points)
-            scr.addstr(self.num_rows+i, 0, display_string)
+            scr.addstr(2 * self.num_rows + i, 0, display_string)
 
     # Print stretching out column-wise by factor of 2, length-wise by factor of 3
-    def draw_board(self, scr):
+    def draw_board(self, scr, curr_username):
         for r in range(self.num_rows):
             for c in range(self.num_cols):
                 char_print = str(self.board[r][c])
-                if self.board[r][c] == WALL:
-                    # Yes, that's a wall
-                    char_print = chr(9608)
+                color = Colors.BLACK
+                square = self.board[r][c]
+
+                if square == WALL:
+                    char_print = BLOCK
+                elif isinstance(square, Player):
+                    char_print = BLOCK
+                    if square.username == curr_username:
+                        color = Colors.YELLOW
+                    else:
+                        color = Colors.RED
 
                 for i in range(2):
                     for j in range(3):
-                        scr.addstr(r * 2 + i, c * 3 + j, char_print)
+                        scr.addstr(r * 2 + i, c * 3 + j, char_print, curses.color_pair(int(color)))
 
-    def draw_screen(self, scr):
-        self.draw_board(scr)
-        self.draw_leaderboard(scr)
+    def draw_screen(self, scr, curr_username):
+        self.draw_board(scr, curr_username)
+        self.draw_leaderboard(scr, curr_username)
 
     def random_empty_location(self):
         while True:
@@ -83,7 +115,6 @@ class Game:
 
     def wrap_pos(self, pos):
         row, col = pos
-        print(self.num_cols)
         return (row % self.num_rows, col % self.num_cols)
 
     # Check if position is in bounds
@@ -95,30 +126,30 @@ class Game:
             return False
         return True
 
-    # If movable, return number of points from moving to that location
+    # If movable, also return number of points from moving to that location
     def position_can_move_to(self, player, pos):
         if not self.position_is_valid(pos):
-            return False
+            return False, None
 
         row, col = pos
         square = self.board[row][col]
         if square == EMPTY:
-            return 0
+            return True, 0
         elif square == LITTLE_DOT:
-            return 1
+            return True, 1
         elif square == BIG_DOT:
-            return 10
+            return True, 10
         elif isinstance(square, Player):
             if player.superspeed_ticks > 0:
             # TODO: Right now, the "earlier" player in the leaderboard kills the later one.
                 square.alive = False
-                return 100
+                return True, 100
 
-        return False
+        return False, None
 
     def process_squares(self, old, new, player):
         if new == BIG_DOT:
-            player.superspeed_ticks = 10
+            player.superspeed_ticks = 50
 
     def restart_player(self, player):
         old_r, old_c = player.position
@@ -138,11 +169,19 @@ class Game:
             return
 
         row, col = player.position # most definitely bad design lol fix this later
-        new_pos = direction_to_lambda[player.direction]((row, col))
-        new_pos = self.wrap_pos(new_pos)
 
-        score = self.position_can_move_to(player, new_pos)
-        if score is not False:
+        # If player can go in next_direction, take that direction. Otherwise, use old direction
+        new_pos = direction_to_lambda[player.next_direction]((row, col))
+        new_pos = self.wrap_pos(new_pos)
+        movable, score = self.position_can_move_to(player, new_pos)
+        if movable and player.direction != opposite_direction(player.next_direction):
+            player.direction = player.next_direction
+        else:
+            new_pos = direction_to_lambda[player.direction]((row, col))
+            new_pos = self.wrap_pos(new_pos)
+            movable, score = self.position_can_move_to(player, new_pos)
+
+        if movable:
             player.position = new_pos
             new_row, new_col = new_pos
 
@@ -175,12 +214,13 @@ class Player:
         self.username = username
         self.position = pos
         self.direction = 'd'
+        self.next_direction = 'd'
         self.superspeed_ticks = 0
         self.alive = True
 
-    def change_direction(self, direction):
-        assert direction in direction_to_lambda, 'Invalid direction'
-        self.direction = direction
+    def change_direction(self, next_direction):
+        assert next_direction in direction_to_lambda, 'Invalid direction'
+        self.next_direction = next_direction
 
     def __str__(self):
         return self.username[0]

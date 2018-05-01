@@ -1,5 +1,6 @@
 import os
 import sys
+import game
 import socket
 import signal
 import curses

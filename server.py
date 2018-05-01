@@ -18,7 +18,7 @@ opcode_to_function = {
 
 client_to_player = {}
 
-SECS_PER_TICK = 0.05
+SECS_PER_TICK = 0.1
 
 def game_handler(lock, game):
     while True:
@@ -27,9 +27,9 @@ def game_handler(lock, game):
             game.tick()
             # game.print_board()
 
-        # Broadcast game state to clients
-        for conn in client_to_player:
-            server_send.send_game(conn, game)
+            # Broadcast game state to clients
+            for conn in client_to_player:
+                server_send.send_game(conn, game)
 
 def disconnect(conn, lock, game):
     print('Disconnecting player...')
