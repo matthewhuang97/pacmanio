@@ -26,6 +26,7 @@ class Game:
                 self.board.append(list(line))
         self.num_rows = len(self.board)
         self.num_cols = len(self.board[0])
+        self.n_big_dots = 0
         self.fill_board_with_dots()
 
         # map from player object to their score
@@ -37,6 +38,7 @@ class Game:
                 if self.board[r][c] == EMPTY:
                     if random.randint(1, 100) <= 3:
                         self.board[r][c] = BIG_DOT
+                        self.n_big_dots += 1
                     # else:
                         # self.board[r][c] = LITTLE_DOT
 
@@ -81,7 +83,7 @@ class Game:
         return True
 
     # If movable, return number of points from moving to that location
-    def position_can_move_to(self, pos):
+    def position_can_move_to(self, player, pos):
         if not self.position_is_valid(pos):
             return False
 
@@ -94,15 +96,16 @@ class Game:
         elif square == BIG_DOT:
             return 10
         elif isinstance(square, Player):
+            if player.superspeed_ticks > 0:
             # TODO: Right now, the "earlier" player in the leaderboard kills the later one.
-            square.alive = False
-            return 100
+                square.alive = False
+                return 100
 
         return False
 
     def process_squares(self, old, new, player):
         if new == BIG_DOT:
-            player.superspeed_ticks = 5
+            player.superspeed_ticks = 10
 
 
     def move_player(self, player):
@@ -110,7 +113,7 @@ class Game:
             row, col = player.position # most definitely bad design lol fix this later
             new_pos = direction_to_lambda[player.direction]((row, col))
 
-            score = self.position_can_move_to(new_pos)
+            score = self.position_can_move_to(player,new_pos)
             if score is not False:
                 player.position = new_pos
                 new_row, new_col = new_pos
@@ -131,6 +134,9 @@ class Game:
             if player.superspeed_ticks > 0:
                 self.move_player(player)
                 player.superspeed_ticks -= 1
+
+        if self.n_big_dots < 10:
+            self.fill_board_with_dots()
 
 
 
