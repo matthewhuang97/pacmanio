@@ -54,7 +54,7 @@ def client_handler(conn, lock, game):
         if header[0] != version:
             thread.exit()
 
-        body_packed = socket_util.recvall(conn, message_length)
+        body_packed = socket_util.recvall(conn, header[1]) # header[1] is message length
 
         if header[1] == len(body_packed):
             thread.exit()
