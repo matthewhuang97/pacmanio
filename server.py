@@ -56,7 +56,7 @@ def client_handler(conn, lock, game):
 
         body_packed = socket_util.recvall(conn, header[1]) # header[1] is message length
 
-        if header[1] == len(body_packed):
+        if header[1] != len(body_packed):
             thread.exit()
 
         opcode = header[2]
