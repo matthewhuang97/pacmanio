@@ -1,0 +1,2 @@
+pip3 install pynput
+sudo python3 client.py ec2-52-207-235-58.compute-1.amazonaws.com 8080
