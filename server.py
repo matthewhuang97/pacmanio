@@ -1,6 +1,6 @@
 import sys
 import time
-import socket
+import socket, socket_util
 from struct import *
 from game import Game
 import server_receive
