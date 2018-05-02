@@ -41,7 +41,7 @@ def disconnect(conn, lock, game):
 def client_handler(conn, lock, game):
     while True:
         try:
-            msg = socket_util.recvall(sock, header_len)
+            msg = socket_util.recvall(conn, header_len)
         except:
             disconnect(conn, lock, game)
 
@@ -54,7 +54,7 @@ def client_handler(conn, lock, game):
         if header[0] != version:
             thread.exit()
 
-        body_packed = socket_util.recvall(sock, message_length)
+        body_packed = socket_util.recvall(conn, message_length)
 
         if header[1] == len(body_packed):
             thread.exit()
