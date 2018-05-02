@@ -42,7 +42,7 @@ def send_to_server(opcode, body, conn):
     msg = header + body
 
     try:
-        conn.send(msg)
+        conn.sendall(msg)
     except:
         # close the client if the connection is down
         print('ERROR: connection down')

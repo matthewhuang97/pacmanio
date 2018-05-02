@@ -59,6 +59,6 @@ def send_to_client(conn, opcode, body):
     """
     header = version + pack('!I', len(body)) + opcode
     try:
-        conn.send(header + body)
+        conn.sendall(header + body)
     except:
         pass

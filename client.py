@@ -1,7 +1,7 @@
 import os
 import sys
 import game
-import socket
+import socket, socket_util
 import signal
 import curses
 from struct import *
@@ -76,7 +76,8 @@ def menu():
 
 def receive_message():
     try:
-        msg = sock.recv(4096)
+        msg = socket_util.recvall(sock, header_len)
+        # msg = sock.recvall(header_len)
     except:
         # close the client if the connection is down
         print('ERROR: connection down')
@@ -84,12 +85,18 @@ def receive_message():
 
     if len(msg) != 0:
         header = unpack(header_fmt, msg[:header_len])
-        body_packed = msg[header_len:]
+        # body_packed = msg[header_len:]
 
         assert header[0] == version, f'Client v{version} incompatible with v{header[0]}'
-        assert header[1] == len(msg) - header_len, 'Corrupted message'
+
+        message_length = header[1]
+        body_packed = socket_util.recvall(sock, message_length)
+
+        assert header[1] == len(body_packed), 'Corrupted message'
         opcode = header[2]
         assert opcode in recv_opcodes, 'Unknown opcode'
+    else:
+        quit()
 
     return recv_opcodes[opcode](body_packed, shared_data)
 
@@ -103,6 +110,8 @@ def main():
     port = sys.argv[2]
     global sock
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    print('Trying to connect ..')
 
     try:
         port = int(port)

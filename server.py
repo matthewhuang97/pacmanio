@@ -41,7 +41,7 @@ def disconnect(conn, lock, game):
 def client_handler(conn, lock, game):
     while True:
         try:
-            msg = conn.recv(4096)
+            msg = socket_util.recvall(sock, header_len)
         except:
             disconnect(conn, lock, game)
 
@@ -50,11 +50,13 @@ def client_handler(conn, lock, game):
             disconnect(conn, lock, game)
 
         header = unpack(header_fmt, msg[:header_len])
-        body_packed = msg[header_len:]
 
-        # Check that versions match up and check integrity of message
-        # If not, drop the connection because there's nothing better to do.
-        if header[0] != version or header[1] != len(msg) - header_len:
+        if header[0] != version:
+            thread.exit()
+
+        body_packed = socket_util.recvall(sock, message_length)
+
+        if header[1] == len(body_packed):
             thread.exit()
 
         opcode = header[2]
