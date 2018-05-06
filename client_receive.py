@@ -42,7 +42,7 @@ def game_state(encoded_game, shared_data):
     game = pickle.loads(encoded_game)
 
     if 'game_initialized' not in shared_data:
-        shared_data['screen_initialized'] = True
+        shared_data['game_initialized'] = True
         game.init_curses()
         shared_data['game'] = game
 
@@ -53,10 +53,9 @@ def game_state(encoded_game, shared_data):
                 break
 
     # game.draw_screen(shared_data['scr'], shared_data['username'])
-    shared_data['game_states'].append(game)
+    shared_data['game_states'].append((game.ticks, game))
 
-    # Maybe add some logic here that updates the game screen... idk
-
+    # Maybe add some logic here that updates the game screen 
 
 
     # TODO: get rid of this gross thing

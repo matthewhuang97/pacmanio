@@ -71,17 +71,21 @@ def run_screen(stdscr):
     receive_message()
     # Clear screen
     stdscr.clear()
+    thread.start_new_thread(message_receiver, (stdscr,))
     client_update(stdscr, shared_data['game'])
+
+
 
 def message_receiver(stdscr):
     while True:
         receive_message()
 
+
 def client_update(stdscr, game):
     while True:
         time.sleep(SECS_PER_TICK)
         game.tick()
-        shared_data['client_states'].append(game)
+        shared_data['client_states'].append((game.ticks, game))
         stdscr.refresh()
         game.draw_screen(shared_data['scr'], shared_data['username'])
 
