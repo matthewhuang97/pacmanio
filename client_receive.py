@@ -39,15 +39,15 @@ def create_success(body, shared_data):
 
     return True
 
-def apply_moves(game_state, move_list, time_to_apply):
-    for time, function, args in move_list:
-        if time > time_to_apply:
+def apply_moves(game_state, move_list, last_processed_id):
+    for action_id, function, args in move_list:
+        if action_id > last_processed_id:
             if args:
                 function(args)
             else:
-                function()
+                game_state.tick()
 
-def reconciliate(shared_data, server_time, most_recent_server_state):
+def reconciliate(shared_data, most_recent_server_state):
     shared_data['scr'].addstr('reconciliating')
     player = shared_data['player']
 
@@ -75,17 +75,8 @@ def reconciliate(shared_data, server_time, most_recent_server_state):
     # Get the most recent one
     time_of_last_action_processed = actions_processed.pop()
 
-    # Find the client game state that corresponds to this
-    last_synced_game_state = None
-    # for game_state in shared_data['client_states']:
-    #     if game_state.ticks == time_of_last_action_processed:
-    #         last_synced_game_state = game_state
-    #         break
-
-    last_synced_game_time = last_synced_game_time.ticks
-
     # Apply all the moves that have happened since
-    apply_moves(last_synced_game_state, shared_data['actions'], game_time)
+    apply_moves(last_synced_game_state, shared_data['actions'], time_of_last_action_processed)
     last_synced_game_state.draw_screen(shared_data['scr'], shared_data['username'])
     shared_data['scr'] = last_synced_game_state
 
@@ -106,7 +97,7 @@ def game_state(encoded_game, shared_data):
                 shared_data['player'] = player
                 break
     else:
-        reconciliate(shared_data, game.ticks, game)
+        reconciliate(shared_data, game)
 
 
     # TODO: get rid of this gross thing

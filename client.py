@@ -18,7 +18,7 @@ recv_opcodes = {
     b'\x04': client_receive.restart_success,
 }
 
-SECS_PER_TICK = 0.1
+SECS_PER_TICK = .1
 
 # header protocol: See README for more details
 #     version number (c)
@@ -44,6 +44,7 @@ def simulate_step(client_game):
 
 
 def on_press(key):
+    global move_counter 
     if key == Key.esc:
         print('Bye')
         quit()
@@ -59,11 +60,11 @@ def on_press(key):
         shared_data['player'].change_direction(char)
 
         # Keep track of what actions have been done and the time they were done
-        time = shared_data['game'].ticks
-        shared_data['actions'].append((time, shared_data['player'].change_direction, char))
+        shared_data['actions'].append((move_counter, shared_data['player'].change_direction, char))
 
         # Send move to server
-        client_send.make_move(char, time, shared_data['username'], sock)
+        client_send.make_move(char, move_counter, shared_data['username'], sock)
+        move_counter +=1
 
 
 def listener():
@@ -96,13 +97,16 @@ def message_receiver():
 
 
 def client_update(stdscr, lock):
+    global move_counter 
     print('Run client update')
     while True:
         time.sleep(SECS_PER_TICK)
         with lock:
             shared_data['game'].tick()
             # shared_data['client_states'].append((game.ticks, game))
-            shared_data['actions'].append((shared_data['game'].ticks, shared_data['game'].tick, None))
+            # shared_data['actions'].append((shared_data['game'].ticks, shared_data['game'].tick, None))
+            shared_data['actions'].append((move_counter, shared_data['game'].tick, None))
+            move_counter +=1
             shared_data['game'].draw_screen(shared_data['scr'], shared_data['username'])
             stdscr.refresh()
 

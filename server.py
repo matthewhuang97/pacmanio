@@ -18,7 +18,7 @@ opcode_to_function = {
 
 client_to_player = {}
 
-SECS_PER_TICK = 0.1
+SECS_PER_TICK = .1
 
 def game_handler(lock, game):
     while True:
