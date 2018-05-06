@@ -47,10 +47,10 @@ def game_state(encoded_game, shared_data):
         shared_data['game'] = game
 
         # sorry another gross thing
-        # for player in game.leaderboard:
-        #     if player.username == shared_data['username']:
-        #         shared_data['player'] = player
-        #         break
+        for player in game.leaderboard:
+            if player.username == shared_data['username']:
+                shared_data['player'] = player
+                break
 
     # game.draw_screen(shared_data['scr'], shared_data['username'])
     shared_data['game_states'].append(game)

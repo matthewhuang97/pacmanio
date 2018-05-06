@@ -53,7 +53,7 @@ def on_press(key):
         return
 
     # Emulate on client
-    # shared_data['player'].change_direction(char)
+    shared_data['player'].change_direction(char)
 
     # Send move to server
     client_send.make_move(char, shared_data['username'], sock)
