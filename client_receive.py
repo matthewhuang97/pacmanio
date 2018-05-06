@@ -48,32 +48,23 @@ def apply_moves(game_state, move_list, last_processed_id):
                 game_state.tick()
 
 def reconciliate(shared_data, most_recent_server_state):
-    shared_data['scr'].addstr('reconciliating')
+    # shared_data['scr'].addstr('reconciliating')
     player = shared_data['player']
 
+
     # Find the actions requested by this player, processed by the server
-    if player.username not in most_recent_server_state.moves:
-        # print(player.username, most_recent_server_state.moves.keys())
-        # shared_data['scr'].addstr(str(most_recent_server_state.moves.keys()))
-        # shared_data['scr'].addstr('player not found')
-        last_client_game_state = most_recent_server_state
+    for player in most_recent_server_state.moves:
+    if player not in most_recent_server_state.moves:
         apply_moves(last_client_game_state, shared_data['actions'], 0)
-        return
-
-    if most_recent_server_state.moves[player] == []:
+    elif most_recent_server_state.moves[player.username] == []:
         shared_data['scr'].addstr('at most recent server time, player did not make changes')
-
-    # If no actions processed by server, we're done
-        #most_recent_server_state.draw_screen(shared_data['scr'], shared_data['username'])
-        #shared_data['scr'].refresh()
         last_client_game_state = most_recent_server_state
         apply_moves(last_client_game_state, shared_data['actions'], 0)
-        return
 
-    shared_data['scr'].addstr('made it')
+
 
     # Get the most recent one
-    time_of_last_action_processed = actions_processed.pop()
+    time_of_last_action_processed = most_recent_server_state.moves[player].pop()
 
     # Apply all the moves that have happened since
     apply_moves(last_synced_game_state, shared_data['actions'], time_of_last_action_processed)
