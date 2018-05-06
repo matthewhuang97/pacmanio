@@ -25,7 +25,6 @@ def game_handler(lock, game):
         time.sleep(SECS_PER_TICK)
         with lock:
             game.tick()
-            # game.print_board()
 
             # Broadcast game state to clients
             for conn in client_to_player:

@@ -44,8 +44,16 @@ def game_state(encoded_game, shared_data):
     if 'game_initialized' not in shared_data:
         shared_data['screen_initialized'] = True
         game.init_curses()
+        shared_data['game'] = game
 
-    game.draw_screen(shared_data['scr'], shared_data['username'])
+        # sorry another gross thing
+        # for player in game.leaderboard:
+        #     if player.username == shared_data['username']:
+        #         shared_data['player'] = player
+        #         break
+
+    # game.draw_screen(shared_data['scr'], shared_data['username'])
+    shared_data['game_states'].append(game)
 
     # TODO: get rid of this gross thing
     for player in game.leaderboard:

@@ -216,9 +216,6 @@ class Game:
                 if player.superspeed_ticks > 0:
                     player.superspeed_ticks -= 1
 
-        if self.n_big_dots < 10:
-            self.fill_board_with_dots()
-
         self.ticks += 1
 
 

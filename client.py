@@ -4,6 +4,7 @@ import game
 import socket, socket_util
 import signal
 import curses
+import time
 from struct import *
 import _thread as thread
 import client_receive, client_send
@@ -17,18 +18,27 @@ recv_opcodes = {
     b'\x04': client_receive.restart_success,
 }
 
+SECS_PER_TICK = 0.1
+
 # header protocol: See README for more details
 #     version number (c)
 #     body length (I)
 #     opcode (c)
 header_fmt = '!cIc'
 header_len = calcsize(header_fmt)
-shared_data = {}
+shared_data = {'game_states':[]}
+
+# Globals
+move_counter = 0
+game_states = []
 
 
 def quit():
     os.system('stty echo')
     os.kill(os.getpid(), signal.SIGINT)
+
+def simulate_step(client_game):
+    client_game.tick()
 
 
 def on_press(key):
@@ -41,6 +51,11 @@ def on_press(key):
             client_send.restart_player(shared_data['username'], sock)
     except:
         return
+
+    # Emulate on client
+    # shared_data['player'].change_direction(char)
+
+    # Send move to server
     client_send.make_move(char, shared_data['username'], sock)
 
 
@@ -52,12 +67,23 @@ def listener():
 
 def run_screen(stdscr):
     shared_data['scr'] = stdscr
+    # Receive + draw initial game state
+    receive_message()
     # Clear screen
     stdscr.clear()
+    client_update(stdscr, shared_data['game'])
+
+def message_receiver():
     while True:
         receive_message()
         stdscr.refresh()
 
+def client_update(stdscr, game):
+    while True:
+        time.sleep(SECS_PER_TICK)
+        game.tick()
+        stdscr.refresh()
+        game.draw_screen(shared_data['scr'], shared_data['username'])
 
 def enter_game():
     thread.start_new_thread(listener, ())
@@ -77,7 +103,6 @@ def menu():
 def receive_message():
     try:
         msg = socket_util.recvall(sock, header_len)
-        # msg = sock.recvall(header_len)
     except:
         # close the client if the connection is down
         print('ERROR: connection down')
@@ -85,7 +110,6 @@ def receive_message():
 
     if len(msg) != 0:
         header = unpack(header_fmt, msg[:header_len])
-        # body_packed = msg[header_len:]
 
         assert header[0] == version, f'Client v{version} incompatible with v{header[0]}'
 
