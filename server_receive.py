@@ -27,6 +27,9 @@ def restart_request(conn, body, game, client_to_player):
 def move_request(conn, body, game, client_to_player):
     decoded_body = body.decode('utf-8')
     move = decoded_body[0]
+    client_request_number = decoded_body[1:]
 
     player = client_to_player[conn]
     player.change_direction(move)
+
+    game.moves[player].append(client_request_number)

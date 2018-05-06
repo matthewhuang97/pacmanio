@@ -26,6 +26,8 @@ def game_handler(lock, game):
         with lock:
             game.tick()
 
+            print(game.moves)
+
             # Broadcast game state to clients
             for conn in client_to_player:
                 server_send.send_game(conn, game)

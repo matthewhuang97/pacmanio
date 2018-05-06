@@ -52,6 +52,7 @@ class Game:
         self.leaderboard = {}
         # game time
         self.ticks = 0
+        self.moves = {}
 
     def init_curses(self):
         # Default pair 0: white on black
@@ -125,6 +126,7 @@ class Game:
         new_player = Player(self, username, (r,c))
         self.leaderboard[new_player] = 0
         self.board[r][c] = new_player
+        self.moves[new_player] = []
         return new_player
 
     def wrap_pos(self, pos):

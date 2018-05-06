@@ -25,6 +25,7 @@ def restart_success(conn, game):
 
 def send_game(conn, game):
     send_to_client(conn, b'\x03', pickle.dumps(game))
+    print('Sent game')
 
 def general_failure(conn, err_msg):
     """Handle a general failure and send message to client.

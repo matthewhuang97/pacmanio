@@ -12,9 +12,9 @@ def padded(string):
 def initialize_player(username, conn):
     send_to_server(b'\x01', padded(username).encode('utf-8'), conn)
 
-def make_move(move_char, username, conn):
+def make_move(move_char, time, username, conn):
     if move_char in valid_keys:
-        msg = move_char
+        msg = move_char + str(time)
         send_to_server(b'\x02', msg.encode('utf-8'), conn)
 
 def restart_player(username, conn):

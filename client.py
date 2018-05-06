@@ -26,11 +26,13 @@ SECS_PER_TICK = 0.1
 #     opcode (c)
 header_fmt = '!cIc'
 header_len = calcsize(header_fmt)
-shared_data = {'game_states':[], 'client_states':[]}
+shared_data = {'server_states':[], 'client_states':[], 'actions':[]}
 
 # Globals
 move_counter = 0
 game_states = []
+actions = []
+valid_keys = ['w', 'a', 's', 'd']
 
 
 def quit():
@@ -52,11 +54,16 @@ def on_press(key):
     except:
         return
 
-    # Emulate on client
-    shared_data['player'].change_direction(char)
+    if char in valid_keys:
+        # Emulate on client
+        shared_data['player'].change_direction(char)
 
-    # Send move to server
-    client_send.make_move(char, shared_data['username'], sock)
+        # Keep track of what actions have been done and the time they were done
+        time = shared_data['game'].ticks
+        shared_data['actions'].append((time, shared_data['player'].change_direction, char))
+
+        # Send move to server
+        client_send.make_move(char, time, shared_data['username'], sock)
 
 
 def listener():
@@ -66,31 +73,50 @@ def listener():
         listener.join()
 
 def run_screen(stdscr):
+    lock = thread.allocate_lock()
     shared_data['scr'] = stdscr
     # Receive + draw initial game state
-    receive_message()
+    # receive_message()
     # Clear screen
     stdscr.clear()
-    thread.start_new_thread(message_receiver, (stdscr,))
-    client_update(stdscr, shared_data['game'])
+
+    print('initialized')
+    receive_message()
+    print('initial screen')
+
+    # Start a thread to receive server updates
+    thread.start_new_thread(message_receiver, ())
+    client_update(stdscr, lock)
 
 
-
-def message_receiver(stdscr):
+def message_receiver():
+    print('receiver init')
     while True:
         receive_message()
 
 
-def client_update(stdscr, game):
+def client_update(stdscr, lock):
+    print('Run client update')
     while True:
         time.sleep(SECS_PER_TICK)
-        game.tick()
-        shared_data['client_states'].append((game.ticks, game))
-        stdscr.refresh()
-        game.draw_screen(shared_data['scr'], shared_data['username'])
+        with lock:
+            shared_data['game'].tick()
+            # shared_data['client_states'].append((game.ticks, game))
+            shared_data['actions'].append((shared_data['game'].ticks, shared_data['game'].tick, None))
+            shared_data['game'].draw_screen(shared_data['scr'], shared_data['username'])
+            stdscr.refresh()
 
 def enter_game():
     thread.start_new_thread(listener, ())
+    #print('Run screen')
+    #thread.start_new_thread(curses.wrapper, (run_screen, ))
+    print('Listener init')
+
+    time.sleep(1)
+
+    #receive_message()
+    
+    #message_receiver()
     curses.wrapper(run_screen)
 
 
@@ -100,6 +126,8 @@ def menu():
         client_send.initialize_player(username[:5], sock)
         # If True, start game
         if receive_message():
+            print('Message received')
+            time.sleep(1)
             break
     enter_game()
 

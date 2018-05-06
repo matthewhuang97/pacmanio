@@ -3,6 +3,7 @@ import game
 from struct import *
 import _thread as thread
 import pickle
+import pdb
 
 def general_failure(body, shared_data):
     """Handles failure messsages from the server.
@@ -38,24 +39,74 @@ def create_success(body, shared_data):
 
     return True
 
+def apply_moves(game_state, move_list, time_to_apply):
+    for time, function, args in move_list:
+        if time > time_to_apply:
+            if args:
+                function(args)
+            else:
+                function()
+
+def reconciliate(shared_data, server_time, most_recent_server_state):
+    shared_data['scr'].addstr('reconciliating')
+    player = shared_data['player']
+
+    # Find the actions requested by this player, processed by the server
+    if player.username not in most_recent_server_state.moves:
+        # print(player.username, most_recent_server_state.moves.keys())
+        # shared_data['scr'].addstr(str(most_recent_server_state.moves.keys()))
+        # shared_data['scr'].addstr('player not found')
+        last_client_game_state = most_recent_server_state
+        apply_moves(last_client_game_state, shared_data['actions'], 0)
+        return
+
+    if most_recent_server_state.moves[player] == []:
+        shared_data['scr'].addstr('at most recent server time, player did not make changes')
+
+    # If no actions processed by server, we're done
+        #most_recent_server_state.draw_screen(shared_data['scr'], shared_data['username'])
+        #shared_data['scr'].refresh()
+        last_client_game_state = most_recent_server_state
+        apply_moves(last_client_game_state, shared_data['actions'], 0)
+        return
+
+    shared_data['scr'].addstr('made it')
+
+    # Get the most recent one
+    time_of_last_action_processed = actions_processed.pop()
+
+    # Find the client game state that corresponds to this
+    last_synced_game_state = None
+    # for game_state in shared_data['client_states']:
+    #     if game_state.ticks == time_of_last_action_processed:
+    #         last_synced_game_state = game_state
+    #         break
+
+    last_synced_game_time = last_synced_game_time.ticks
+
+    # Apply all the moves that have happened since
+    apply_moves(last_synced_game_state, shared_data['actions'], game_time)
+    last_synced_game_state.draw_screen(shared_data['scr'], shared_data['username'])
+    shared_data['scr'] = last_synced_game_state
+
+
 def game_state(encoded_game, shared_data):
     game = pickle.loads(encoded_game)
 
     if 'game_initialized' not in shared_data:
+        print('first time')
         shared_data['game_initialized'] = True
         game.init_curses()
         shared_data['game'] = game
+        game.draw_screen(shared_data['scr'], shared_data['username'])
 
         # sorry another gross thing
         for player in game.leaderboard:
             if player.username == shared_data['username']:
                 shared_data['player'] = player
                 break
-
-    # game.draw_screen(shared_data['scr'], shared_data['username'])
-    shared_data['game_states'].append((game.ticks, game))
-
-    # Maybe add some logic here that updates the game screen 
+    else:
+        reconciliate(shared_data, game.ticks, game)
 
 
     # TODO: get rid of this gross thing
