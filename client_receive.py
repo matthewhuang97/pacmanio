@@ -55,6 +55,10 @@ def game_state(encoded_game, shared_data):
     # game.draw_screen(shared_data['scr'], shared_data['username'])
     shared_data['game_states'].append(game)
 
+    # Maybe add some logic here that updates the game screen... idk
+
+
+
     # TODO: get rid of this gross thing
     for player in game.leaderboard:
         if player.username == shared_data['username'] and not player.alive:

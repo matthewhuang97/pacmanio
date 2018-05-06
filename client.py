@@ -26,7 +26,7 @@ SECS_PER_TICK = 0.1
 #     opcode (c)
 header_fmt = '!cIc'
 header_len = calcsize(header_fmt)
-shared_data = {'game_states':[]}
+shared_data = {'game_states':[], 'client_states':[]}
 
 # Globals
 move_counter = 0
@@ -73,15 +73,15 @@ def run_screen(stdscr):
     stdscr.clear()
     client_update(stdscr, shared_data['game'])
 
-def message_receiver():
+def message_receiver(stdscr):
     while True:
         receive_message()
-        stdscr.refresh()
 
 def client_update(stdscr, game):
     while True:
         time.sleep(SECS_PER_TICK)
         game.tick()
+        shared_data['client_states'].append(game)
         stdscr.refresh()
         game.draw_screen(shared_data['scr'], shared_data['username'])
 
