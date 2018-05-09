@@ -1,14 +1,13 @@
+import random
 import server_send
 import pdb
 
 def create_request(conn, body, game, client_to_player):
     username = body.decode('utf-8').strip()
 
-    for player in game.leaderboard:
-        # User already exists
-        if username == player.username:
-            server_send.general_failure(conn, 'This user already exists')
-            return
+    if username in game.players:
+        server_send.general_failure(conn, 'This user already exists')
+        return
 
     # Create new player
     player = game.spawn_player(username)
@@ -18,18 +17,16 @@ def create_request(conn, body, game, client_to_player):
 
 def restart_request(conn, body, game, client_to_player):
     player = client_to_player[conn]
-
     game.restart_player(player)
-
     server_send.restart_success(conn, game)
 
-
+# Rate at which move requests are dropped
+REQUEST_DROP_RATE = 0.0
 def move_request(conn, body, game, client_to_player):
-    decoded_body = body.decode('utf-8')
-    move = decoded_body[0]
-    client_request_number = decoded_body[1:]
+    if random.random() < REQUEST_DROP_RATE:
+        return
+
+    move = body.decode('utf-8')
 
     player = client_to_player[conn]
     player.change_direction(move)
-
-    game.moves[player].append(client_request_number)

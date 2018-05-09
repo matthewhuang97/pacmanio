@@ -1,4 +1,5 @@
 import sys
+import copy
 import time
 import socket, socket_util
 from struct import *
@@ -18,19 +19,31 @@ opcode_to_function = {
 
 client_to_player = {}
 
-SECS_PER_TICK = .1
+SECS_PER_TICK = 0.1
+# Number of seconds of lag to impose on all connections
+SECS_DELAY = 1
 
 def game_handler(lock, game):
+    past_game_states = []
     while True:
         time.sleep(SECS_PER_TICK)
         with lock:
             game.tick()
+            print(game.num_ticks)
+            game_copy = copy.deepcopy(game)
+            past_game_states.append(game_copy)
+            # If true, we've queued states for SECS_DELAY and can begin sending the old states
+            if len(past_game_states) > SECS_DELAY // SECS_PER_TICK:
+                game_to_send = past_game_states[0]
+                past_game_states = past_game_states[1:]
 
-            print(game.moves)
-
-            # Broadcast game state to clients
-            for conn in client_to_player:
-                server_send.send_game(conn, game)
+                # Broadcast game state to clients
+                for conn, player in client_to_player.items():
+                    # Only send to the client if the player exists -- this matters when we impose
+                    # our artificial lag (the server will send an old state in which the client does
+                    # not yet exist, which will confuse the clients)
+                    if player.username in game_to_send.players:
+                        server_send.send_game(conn, game_to_send)
 
 def disconnect(conn, lock, game):
     print('Disconnecting player...')
@@ -47,7 +60,6 @@ def client_handler(conn, lock, game):
             disconnect(conn, lock, game)
 
         if len(msg) == 0: # Disconnect signal
-            print('WHOA')
             disconnect(conn, lock, game)
 
         header = unpack(header_fmt, msg[:header_len])
@@ -86,7 +98,6 @@ def main():
         conn, addr = sock.accept()
         print(f'Picked up new client {addr}')
 
-        lock = thread.allocate_lock()
         thread.start_new_thread(client_handler, (conn, lock, game))
 
 if __name__ == '__main__':

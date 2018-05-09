@@ -1,10 +1,12 @@
-from enum import IntEnum
+import pdb
+import copy
+import time
 import random
 import curses
+from enum import IntEnum
 from operator import itemgetter
-import copy
-import pdb
 
+# We encode directions canonically as their letter (w up, s down, a left, d right)
 direction_to_lambda = {
     'w': lambda pos: (pos[0] - 1, pos[1]),
     's': lambda pos: (pos[0] + 1, pos[1]),
@@ -22,12 +24,13 @@ def opposite_direction(d):
     if d == 'd':
         return 'a'
 
+# Our game encodes each square as one of these characters
 WALL = 'O'
 EMPTY = ' '
-LITTLE_DOT = '.'
 BIG_DOT = 'o'
-# Looks like: █!
-BLOCK = chr(9608)
+
+# Character to print to represent an object, looks like: █
+BLOCK_PRINT = chr(9608)
 
 class Colors(IntEnum):
     BLACK = 0
@@ -48,11 +51,14 @@ class Game:
         self.n_big_dots = 0
         self.fill_board_with_dots()
 
-        # map from player object to their score
+        # map from player username to their score
         self.leaderboard = {}
+        # map from player username to their player object
+        self.players = {}
         # game time
-        self.ticks = 0
-        self.moves = {}
+        self.num_ticks = 0
+        # actual clock time
+        self.timestamp = 0
 
     def init_curses(self):
         # Default pair 0: white on black
@@ -69,14 +75,10 @@ class Game:
                     if random.randint(1, 100) <= 3:
                         self.board[r][c] = BIG_DOT
                         self.n_big_dots += 1
-                    # else:
-                        # self.board[r][c] = LITTLE_DOT
 
-    def draw_leaderboard(self, scr, curr_username):
-        sorted_leaderboard = sorted(self.leaderboard.items(), key=itemgetter(1))
-
-        for i, (username, points) in enumerate(sorted_leaderboard):
-            display_string = "{} : {} points".format(username, points)
+    def draw_leaderboard(self, scr):
+        for i, (username, points) in enumerate(self.leaderboard.items()):
+            display_string = '{} : {} points'.format(username, points)
             scr.addstr(2 * self.num_rows + i, 0, display_string)
 
     # Print stretching out column-wise by factor of 2, length-wise by factor of 3
@@ -88,12 +90,12 @@ class Game:
                 square = self.board[r][c]
 
                 if square == WALL:
-                    char_print = BLOCK
+                    char_print = BLOCK_PRINT
                 elif square == BIG_DOT:
-                    char_print = BLOCK
+                    char_print = BLOCK_PRINT
                     color = Colors.CYAN
                 elif isinstance(square, Player):
-                    char_print = BLOCK
+                    char_print = BLOCK_PRINT
                     if square.username == curr_username:
                         if square.superspeed_ticks:
                             color = Colors.BLUE
@@ -112,7 +114,7 @@ class Game:
 
     def draw_screen(self, scr, curr_username):
         self.draw_board(scr, curr_username)
-        self.draw_leaderboard(scr, curr_username)
+        self.draw_leaderboard(scr)
 
     def random_empty_location(self):
         while True:
@@ -120,14 +122,6 @@ class Game:
             c = random.randint(0, self.num_cols - 1)
             if self.board[r][c] == EMPTY:
                 return (r, c)
-
-    def spawn_player(self, username):
-        r, c = self.random_empty_location()
-        new_player = Player(self, username, (r,c))
-        self.leaderboard[new_player] = 0
-        self.board[r][c] = new_player
-        self.moves[new_player] = []
-        return new_player
 
     def wrap_pos(self, pos):
         row, col = pos
@@ -142,7 +136,7 @@ class Game:
             return False
         return True
 
-    # If movable, also return number of points from moving to that location
+    # Returns a tuple (pos is movable, # of points gained OR None)
     def position_can_move_to(self, player, pos):
         if not self.position_is_valid(pos):
             return False, None
@@ -151,12 +145,10 @@ class Game:
         square = self.board[row][col]
         if square == EMPTY:
             return True, 0
-        elif square == LITTLE_DOT:
-            return True, 1
         elif square == BIG_DOT:
             return True, 10
         elif isinstance(square, Player):
-            # TODO: Right now, can't kill each other if both supersped
+            # Can't kill each other if both superspeed
             if player.superspeed_ticks > 0 and square.superspeed_ticks == 0:
                 square.alive = False
                 return True, 100
@@ -167,6 +159,17 @@ class Game:
         if new == BIG_DOT:
             player.superspeed_ticks = 50
 
+    def spawn_player(self, username):
+        r, c = self.random_empty_location()
+        new_player = Player(self, username, (r,c))
+        self.leaderboard[username] = 0
+        self.players[username] = new_player
+        self.board[r][c] = new_player
+        return new_player
+
+    def change_player_direction(self, username, next_direction):
+        self.players[username].change_direction(next_direction)
+
     def restart_player(self, player):
         old_r, old_c = player.position
         self.board[old_r][old_c] = EMPTY
@@ -176,12 +179,11 @@ class Game:
         player.position = new_r, new_c
 
         # Reset to zero
-        self.leaderboard[player] = 0
+        self.leaderboard[player.username] = 0
         player.alive = True
 
-
     def move_player(self, player):
-        if player.superspeed_ticks == 0 and self.ticks % 2 == 1:
+        if player.superspeed_ticks == 0 and self.num_ticks % 2 == 1:
             return
 
         row, col = player.position # most definitely bad design lol fix this later
@@ -204,21 +206,24 @@ class Game:
             self.process_squares(self.board[row][col], self.board[new_row][new_col], player)
             self.board[row][col] = EMPTY
             self.board[new_row][new_col] = player
-            self.leaderboard[player] += score
+            self.leaderboard[player.username] += score
+
+        if player.superspeed_ticks > 0:
+            player.superspeed_ticks -= 1
 
     def remove_player(self, player):
         row, col = player.position
         self.board[row][col] = EMPTY
-        del self.leaderboard[player]
+        del self.leaderboard[player.username]
+        del self.players[player.username]
 
     def tick(self):
-        for player in self.leaderboard:
+        for _, player in self.players.items():
             if player.alive:
                 self.move_player(player)
-                if player.superspeed_ticks > 0:
-                    player.superspeed_ticks -= 1
 
-        self.ticks += 1
+        self.num_ticks += 1
+        self.timestamp = time.time()
 
 
 class Player:

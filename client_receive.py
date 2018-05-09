@@ -5,6 +5,10 @@ import _thread as thread
 import pickle
 import pdb
 
+def debug(txt):
+    with open('/tmp/log.txt', 'a') as f:
+        f.write(str(txt) + '\n')
+
 def general_failure(body, shared_data):
     """Handles failure messsages from the server.
 
@@ -39,65 +43,46 @@ def create_success(body, shared_data):
 
     return True
 
-def apply_moves(game_state, move_list, last_processed_id):
-    for action_id, function, args in move_list:
-        if action_id > last_processed_id:
-            if args:
-                function(args)
-            else:
-                game_state.tick()
-
-def reconciliate(shared_data, most_recent_server_state):
-    # shared_data['scr'].addstr('reconciliating')
-    player = shared_data['player']
-
-
+def reconciliate(shared_data, server_game):
     # Find the actions requested by this player, processed by the server
-    for player in most_recent_server_state.moves:
-    if player not in most_recent_server_state.moves:
-        apply_moves(last_client_game_state, shared_data['actions'], 0)
-    elif most_recent_server_state.moves[player.username] == []:
-        shared_data['scr'].addstr('at most recent server time, player did not make changes')
-        last_client_game_state = most_recent_server_state
-        apply_moves(last_client_game_state, shared_data['actions'], 0)
+    with shared_data['game_lock']:
+        server_time = server_game.timestamp
+        log = shared_data['log']
 
+        debug('server timestamp: ' + str(server_time))
+        debug(log)
 
+        ind = 0
+        for ind, (t, _) in enumerate(log):
+            if t >= server_time:
+                break
+        log = log[ind:]
+        shared_data['log'] = log
+        debug(log)
 
-    # Get the most recent one
-    time_of_last_action_processed = most_recent_server_state.moves[player].pop()
-
-    # Apply all the moves that have happened since
-    apply_moves(last_synced_game_state, shared_data['actions'], time_of_last_action_processed)
-    last_synced_game_state.draw_screen(shared_data['scr'], shared_data['username'])
-    shared_data['scr'] = last_synced_game_state
-
+        for _, event in log:
+            if event == 'tick':
+                server_game.tick()
+            else:
+                next_direction = event
+                server_game.change_player_direction(shared_data['username'], next_direction)
+        shared_data['game'] = server_game
 
 def game_state(encoded_game, shared_data):
     game = pickle.loads(encoded_game)
 
-    if 'game_initialized' not in shared_data:
+    if 'game' not in shared_data:
         print('first time')
-        shared_data['game_initialized'] = True
-        game.init_curses()
         shared_data['game'] = game
-        game.draw_screen(shared_data['scr'], shared_data['username'])
-
-        # sorry another gross thing
-        for player in game.leaderboard:
-            if player.username == shared_data['username']:
-                shared_data['player'] = player
-                break
+        game.init_curses()
     else:
         reconciliate(shared_data, game)
 
+    player = game.players[shared_data['username']]
+    if not player.alive:
+        lost_game(shared_data['scr'])
 
-    # TODO: get rid of this gross thing
-    for player in game.leaderboard:
-        if player.username == shared_data['username'] and not player.alive:
-            lost_game('', shared_data)
-
-def lost_game(body, shared_data):
-    scr = shared_data['scr']
+def lost_game(scr):
     scr.addstr("\nYou have died. Goodbye. You can exit with ESC, or press r to resume.")
     scr.refresh()
 
