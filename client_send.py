@@ -1,4 +1,5 @@
 from struct import pack
+from utils import debug
 
 version = b'\x01'
 
@@ -11,11 +12,11 @@ def padded(string):
 def initialize_player(username, conn):
     send_to_server(b'\x01', padded(username).encode('utf-8'), conn)
 
-def make_move(move_char, username, conn):
+def make_move(move_char, conn):
     send_to_server(b'\x02', move_char.encode('utf-8'), conn)
 
-def restart_player(conn):
-    send_to_server(b'\x03', conn)
+def restart_player(username, conn):
+    send_to_server(b'\x03', username.encode('utf-8'), conn)
 
 def send_to_server(opcode, body, conn):
     """Sends a message to server.

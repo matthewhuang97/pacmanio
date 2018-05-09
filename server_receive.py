@@ -16,17 +16,17 @@ def create_request(conn, body, game, client_to_player):
     print('New player successfully created')
 
 def restart_request(conn, body, game, client_to_player):
+    # Use username to double-check
+    username = body.decode('utf-8')
     player = client_to_player[conn]
+    assert player.username == username
     game.restart_player(player)
-    server_send.restart_success(conn, game)
 
 # Rate at which move requests are dropped
 REQUEST_DROP_RATE = 0.0
 def move_request(conn, body, game, client_to_player):
     if random.random() < REQUEST_DROP_RATE:
         return
-
     move = body.decode('utf-8')
-
     player = client_to_player[conn]
     player.change_direction(move)

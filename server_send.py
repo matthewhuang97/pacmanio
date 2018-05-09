@@ -36,15 +36,12 @@ def create_success(conn, username, game_state):
 
     send_to_client(conn, b'\x01', username.encode('utf-8'))
 
-# Percentage of game states to drop
+# Percentage of game states to drop -- this will look like choppiness on the client
+# (without any prediction)
 GAME_STATE_PACKET_LOSS = 0.0
 def send_game(conn, game):
     if random.random() > GAME_STATE_PACKET_LOSS:
         send_to_client(conn, b'\x02', pickle.dumps(game))
-        print('sent game')
-
-def restart_success(conn, game):
-    send_to_client(conn, b'\x03', pickle.dumps(game))
 
 def send_to_client(conn, opcode, body):
     """Send encoded message to a connection.
@@ -64,6 +61,5 @@ def send_to_client(conn, opcode, body):
     header = version + pack('!I', len(body)) + opcode
     try:
         conn.sendall(header + body)
-        print('sent to client')
     except:
         pass

@@ -30,6 +30,7 @@ def game_handler(lock, game):
         with lock:
             game.tick()
             print(game.num_ticks)
+
             game_copy = copy.deepcopy(game)
             past_game_states.append(game_copy)
             # If true, we've queued states for SECS_DELAY and can begin sending the old states
@@ -59,23 +60,19 @@ def client_handler(conn, lock, game):
         except:
             disconnect(conn, lock, game)
 
-        if len(msg) == 0: # Disconnect signal
-            disconnect(conn, lock, game)
-
         header = unpack(header_fmt, msg[:header_len])
 
         if header[0] != version:
             thread.exit()
 
-        body_packed = socket_util.recvall(conn, header[1]) # header[1] is message length
-
+        # header[1] is message length
+        body_packed = socket_util.recvall(conn, header[1])
         if header[1] != len(body_packed):
             thread.exit()
 
         opcode = header[2]
         with lock:
             opcode_to_function[opcode](conn, body_packed, game, client_to_player)
-
 
 def main():
     if(len(sys.argv) != 3):
