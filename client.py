@@ -9,13 +9,13 @@ from struct import *
 import _thread as thread
 import client_receive, client_send
 from pynput.keyboard import Key, Listener
+from utils import debug
 
 version = b'\x01'
 recv_opcodes = {
     b'\x00': client_receive.general_failure,
     b'\x01': client_receive.create_success,
     b'\x02': client_receive.receive_game_state,
-    b'\x03': client_receive.restart_success,
 }
 
 # Number of seconds corresponding to a game tick
@@ -48,7 +48,8 @@ def on_press(key):
     try:
         char = key.char
         if char == 'r':
-            client_send.restart_player(shared_data['sock'])
+            client_send.restart_player(shared_data['username'], shared_data['sock'])
+            return
     # Exception occurs when key.char fails, meaning the key pressed was not a character
     except:
         return
@@ -64,7 +65,7 @@ def on_press(key):
         shared_data['log'].append((time.time(), next_direction))
 
         # Send to server
-        client_send.make_move(char, username, shared_data['sock'])
+        client_send.make_move(char, shared_data['sock'])
 
 def enter_game(stdscr):
     """

@@ -37,9 +37,12 @@ def restart_request(conn, body, game, client_to_player):
         client_to_player: Dictionary containing connections as
             keys and player objects as values.
     """
+    # Use username to double-check
+    username = body.decode('utf-8')
     player = client_to_player[conn]
+    assert player.username == username
     game.restart_player(player)
-    server_send.restart_success(conn, game)
+
 
 def move_request(conn, body, game, client_to_player):
     """Processes request to change a player's direction.
@@ -54,8 +57,6 @@ def move_request(conn, body, game, client_to_player):
 
     if random.random() < REQUEST_DROP_RATE:
         return
-
     move = body.decode('utf-8')
-
     player = client_to_player[conn]
     player.change_direction(move)

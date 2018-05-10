@@ -43,7 +43,7 @@ class Colors(IntEnum):
 class Game:
     def __init__(self):
         self.board = []
-        with open('board2.txt', 'r') as f:
+        with open('board.txt', 'r') as f:
             for line in f:
                 self.board.append(list(line.rstrip('\n')))
         self.num_rows = len(self.board)

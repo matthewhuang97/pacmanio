@@ -4,10 +4,7 @@ from struct import *
 import _thread as thread
 import pickle
 import pdb
-
-def debug(txt):
-    with open('/tmp/log.txt', 'a') as f:
-        f.write(str(txt) + '\n')
+from utils import debug
 
 def general_failure(body, shared_data):
     """Handles failure messsages from the server.
@@ -38,11 +35,10 @@ def create_success(body, shared_data):
 
     username = body.decode('utf-8').strip()
     shared_data['username'] = username
-    print(f'Player creation successful: {username}')
-    print('You have joined the game. Move with the wasd keys.')
-
     return True
 
+# Receives previous server game state and reconciles with actions in between to extrapolate to
+# a new client state
 def reconciliate(shared_data, server_game):
     """Reconciles the game state received from the server with the client.
 
@@ -64,15 +60,17 @@ def reconciliate(shared_data, server_game):
             if t >= server_time:
                 break
         log = log[ind:]
-        shared_data['log'] = log
 
+        # Replay events from log
         for _, event in log:
             if event == 'tick':
                 server_game.tick()
             else:
                 next_direction = event
                 server_game.change_player_direction(shared_data['username'], next_direction)
+
         shared_data['game'] = server_game
+        shared_data['log'] = log
 
 def receive_game_state(encoded_game, shared_data):
     """Called upon receiving a game state from the server.
@@ -82,7 +80,8 @@ def receive_game_state(encoded_game, shared_data):
     """
     game = pickle.loads(encoded_game)
 
-    if 'game' not in shared_data: # First time game state has been received
+
+    if 'game' not in shared_data:
         shared_data['game'] = game
         game.init_curses()
     else:
@@ -99,11 +98,3 @@ def lost_game(scr):
     """
     scr.addstr("\nYou have died. Goodbye. You can exit with ESC, or press r to resume.")
     scr.refresh()
-
-def restart_success(body, shared_data):
-    """Called upon dying in the game.
-    Args:
-        body: body of message, should be the encoded game state
-        shared_data: Dictionary of shared data between server and client.
-    """
-    receive_game_state(body, shared_data)

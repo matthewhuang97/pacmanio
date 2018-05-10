@@ -37,24 +37,13 @@ def create_success(conn, username, game_state):
     """
     send_to_client(conn, b'\x01', username.encode('utf-8'))
 
+
+# Percentage of game states to drop -- this will look like choppiness on the client
+# (without any prediction)
+GAME_STATE_PACKET_LOSS = 0.0
 def send_game(conn, game):
     if random.random() > GAME_STATE_PACKET_LOSS:
         send_to_client(conn, b'\x02', pickle.dumps(game))
-        print('sent game')
-
-def restart_success(conn, game):
-    """Send message of successful game restart to client.
-
-    Args:
-        conn: Socket, socket to which to send the message.
-        game: Unencoded game state on which to restart the client of interest.
-
-    Side effects:
-        Sends a message to the connection socket using the
-        create_success opcode. The body of the message is the packed version
-        (string) of the account username (unsigned int) that has been created.
-    """
-    send_to_client(conn, b'\x03', pickle.dumps(game))
 
 def send_to_client(conn, opcode, body):
     """Send encoded message to a connection.
@@ -74,6 +63,5 @@ def send_to_client(conn, opcode, body):
     header = version + pack('!I', len(body)) + opcode
     try:
         conn.sendall(header + body)
-        print('sent to client')
     except:
         pass
