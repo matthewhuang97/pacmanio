@@ -14,14 +14,22 @@ direction_to_lambda = {
     'd': lambda pos: (pos[0], pos[1] + 1),
 }
 
-def opposite_direction(d):
-    if d == 'w':
+def opposite_direction(direction):
+    """Returns the opposite direction given as a character.
+
+    Args:
+        direction: char, representing the input direction. 
+
+    Returns:
+        char, representing the opposite direction.
+    """
+    if direction == 'w':
         return 's'
-    if d == 's':
+    if direction == 's':
         return 'w'
-    if d == 'a':
+    if direction == 'a':
         return 'd'
-    if d == 'd':
+    if direction == 'd':
         return 'a'
 
 # Our game encodes each square as one of these characters
@@ -41,7 +49,10 @@ class Colors(IntEnum):
     MAGENTA = 5
 
 class Game:
+    """Class representing game states.
+    """
     def __init__(self):
+        # 2D array representing the boar
         self.board = []
         with open('board.txt', 'r') as f:
             for line in f:
@@ -69,6 +80,10 @@ class Game:
         curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
 
     def fill_board_with_dots(self):
+        """Randomly fills some elements of the game board with big dots.
+
+        Side effect: modifices self.board
+        """
         for r in range(self.num_rows):
             for c in range(self.num_cols):
                 if self.board[r][c] == EMPTY:
@@ -77,6 +92,8 @@ class Game:
                         self.n_big_dots += 1
 
     def draw_leaderboard(self, scr):
+        """Draws the leaderboard at the bottom of the screen.
+        """
         for i, (username, points) in enumerate(self.leaderboard.items()):
             display_string = '{} : {} points'.format(username, points)
             scr.addstr(2 * self.num_rows + i, 0, display_string)
@@ -247,9 +264,3 @@ class Player:
         return self.username
 
 
-# def main():
-    # game = load_new_game()
-    # game.start_game()
-
-# if __name__ == '__main__':
-    # main()

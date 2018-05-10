@@ -37,8 +37,6 @@ def create_success(body, shared_data):
     shared_data['username'] = username
     return True
 
-# Receives previous server game state and reconciles with actions in between to extrapolate to
-# a new client state
 def reconciliate(shared_data, server_game):
     """Reconciles the game state received from the server with the client.
 

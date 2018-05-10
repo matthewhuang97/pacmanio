@@ -24,12 +24,20 @@ SECS_PER_TICK = 0.1
 SECS_DELAY = 1
 
 def game_handler(lock, game):
+    """Game loop. 
+
+    Args: 
+        lock: _thread.lock object
+        game: game object 
+
+    Waits SECS_PER_TICK in between advancing each game state.
+    Imposes SECS_DELAY of artificial lag in sending to each client.
+    """
     past_game_states = []
     while True:
         time.sleep(SECS_PER_TICK)
         with lock:
             game.tick()
-            print(game.num_ticks)
 
             game_copy = copy.deepcopy(game)
             past_game_states.append(game_copy)
@@ -47,6 +55,17 @@ def game_handler(lock, game):
                         server_send.send_game(conn, game_to_send)
 
 def disconnect(conn, lock, game):
+    """Removes player from game and cleans up thread.
+
+    Args:
+        conn: socket of corersponding player
+        lock: _thread.lock object for the game state
+        game: game state to remove player from
+
+    Side effects:
+        Removes player from game and removes from client_to_player dictionary.
+        Exits thread.
+    """
     print('Disconnecting player...')
     with lock:
         game.remove_player(client_to_player[conn])
@@ -54,6 +73,13 @@ def disconnect(conn, lock, game):
     thread.exit()
 
 def client_handler(conn, lock, game):
+    """Handles requests sent from the client to the server.
+
+    Args:
+        conn: connection on which to listen for messages.
+        lock: lock object
+        game: game the client is in.
+    """
     while True:
         try:
             msg = socket_util.recvall(conn, header_len)
@@ -75,6 +101,8 @@ def client_handler(conn, lock, game):
             opcode_to_function[opcode](conn, body_packed, game, client_to_player)
 
 def main():
+    """Initializes game, starts a thread to handle it, and binds a socket to listen.
+    """
     if(len(sys.argv) != 3):
         print("Usage 'python server.py <host> <port>'. Example: python server.py 10.252.215.26 8090")
         sys.exit()

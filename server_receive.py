@@ -49,7 +49,7 @@ def move_request(conn, body, game, client_to_player):
 
     Args: 
         conn: connection on which to send the message
-        body: Encoded (utf-8) version of the player's move.
+        body: Encoded (utf-8) version of the player's move (char)
         game: Game state to send to player. 
         client_to_player: Dictionary containing connections as
             keys and player objects as values.

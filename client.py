@@ -31,6 +31,8 @@ header_len = calcsize(header_fmt)
 shared_data = {}
 
 def quit():
+    """Exits client.
+    """
     os.system('stty echo')
     os.kill(os.getpid(), signal.SIGINT)
 
@@ -68,7 +70,17 @@ def on_press(key):
         client_send.make_move(char, shared_data['sock'])
 
 def enter_game(stdscr):
-    """
+    """Initializes game.
+
+    Args:
+        stdscr: The standard screen passed into the curses wrapper.
+
+    Side effects:
+        Stores the screen object in shared_data['scr']
+        Stores the lock object in shared_data['game_lock']
+        Simulates game and logs actions to shared_data['log']
+        Starts a thread to receive client key presses.
+        Starts a thread to receive server updates.
     """
     shared_data['scr'] = stdscr
     stdscr.clear()
@@ -91,23 +103,30 @@ def enter_game(stdscr):
             game = shared_data['game']
             game.tick()
             client_receive.debug(game.num_ticks)
+            # Append 'tick' actions to log.
             shared_data['log'].append((time.time(), 'tick'))
 
-            # TODO: drawing the wrong state
             game.draw_screen(stdscr, shared_data['username'])
             stdscr.refresh()
 
 def key_listener():
-    # Collect keypress events once the game begins
+    """Collect keypress events once the game begins. 
+    """
     with Listener(on_press=on_press) as listener:
         os.system('stty -echo')
         listener.join()
 
 def server_listener():
+    """Receives and processes server messages.
+    """
     while True:
         receive_message()
 
 def receive_message():
+    """Receives and processes a single server message.
+
+    Server socket should be stored in shared_data['sock']
+    """
     try:
         msg = socket_util.recvall(shared_data['sock'], header_len)
     except:
@@ -130,6 +149,8 @@ def receive_message():
     return recv_opcodes[opcode](body_packed, shared_data)
 
 def menu():
+    """Display entry message and enters game when server confirms.
+    """
     while True:
         username = input('Welcome to Pacman.io! Enter a username (max 5 chars)\n')
         client_send.initialize_player(username[:5], shared_data['sock'])
