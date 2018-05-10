@@ -14,7 +14,7 @@ version = b'\x01'
 recv_opcodes = {
     b'\x00': client_receive.general_failure,
     b'\x01': client_receive.create_success,
-    b'\x02': client_receive.game_state,
+    b'\x02': client_receive.receive_game_state,
     b'\x03': client_receive.restart_success,
 }
 
@@ -35,6 +35,14 @@ def quit():
     os.kill(os.getpid(), signal.SIGINT)
 
 def on_press(key):
+    """Handles keypress events for pynput.keyboard.Listener.
+
+    Args:
+        key: key that was pressed.
+
+    Side effects:
+        If key is a valid move, sends to server and emulates it locally.
+    """
     if key == Key.esc:
         quit()
     try:
@@ -59,6 +67,8 @@ def on_press(key):
         client_send.make_move(char, username, shared_data['sock'])
 
 def enter_game(stdscr):
+    """
+    """
     shared_data['scr'] = stdscr
     stdscr.clear()
 

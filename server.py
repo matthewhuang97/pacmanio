@@ -35,7 +35,7 @@ def game_handler(lock, game):
             # If true, we've queued states for SECS_DELAY and can begin sending the old states
             if len(past_game_states) > SECS_DELAY // SECS_PER_TICK:
                 game_to_send = past_game_states[0]
-                past_game_states = past_game_states[1:]
+                past_game_states = past_game_states[1:] # Remove sent game state from list of game states
 
                 # Broadcast game state to clients
                 for conn, player in client_to_player.items():
@@ -64,12 +64,12 @@ def client_handler(conn, lock, game):
 
         header = unpack(header_fmt, msg[:header_len])
 
-        if header[0] != version:
+        if header[0] != version: # Check header version.
             thread.exit()
 
         body_packed = socket_util.recvall(conn, header[1]) # header[1] is message length
 
-        if header[1] != len(body_packed):
+        if header[1] != len(body_packed): # Check to make sure we've received the entire message
             thread.exit()
 
         opcode = header[2]

@@ -44,13 +44,20 @@ def create_success(body, shared_data):
     return True
 
 def reconciliate(shared_data, server_game):
-    # Find the actions requested by this player, processed by the server
+    """Reconciles the game state received from the server with the client.
+
+    Args:
+        shared_data: Dictionary of shared data between server and client. 
+        server_game: Game state from server.
+
+    Side effects:
+        Resimulates actions taken locally since the synced time of the game state
+        received from the server.
+        Removes past data from log that has already been synced to the server.
+    """
     with shared_data['game_lock']:
         server_time = server_game.timestamp
         log = shared_data['log']
-
-        debug('server timestamp: ' + str(server_time))
-        debug(log)
 
         ind = 0
         for ind, (t, _) in enumerate(log):
@@ -58,7 +65,6 @@ def reconciliate(shared_data, server_game):
                 break
         log = log[ind:]
         shared_data['log'] = log
-        debug(log)
 
         for _, event in log:
             if event == 'tick':
@@ -68,11 +74,15 @@ def reconciliate(shared_data, server_game):
                 server_game.change_player_direction(shared_data['username'], next_direction)
         shared_data['game'] = server_game
 
-def game_state(encoded_game, shared_data):
+def receive_game_state(encoded_game, shared_data):
+    """Called upon receiving a game state from the server.
+    Args:
+        shared_data: Dictionary of shared data between server and client. 
+        encoded_game: Encoded version of game state from server.
+    """
     game = pickle.loads(encoded_game)
 
-    if 'game' not in shared_data:
-        print('first time')
+    if 'game' not in shared_data: # First time game state has been received
         shared_data['game'] = game
         game.init_curses()
     else:
@@ -83,8 +93,17 @@ def game_state(encoded_game, shared_data):
         lost_game(shared_data['scr'])
 
 def lost_game(scr):
+    """Called upon dying in the game.
+    Args:
+        scr: Screen on which to display goodbye message.
+    """
     scr.addstr("\nYou have died. Goodbye. You can exit with ESC, or press r to resume.")
     scr.refresh()
 
 def restart_success(body, shared_data):
-    game_state(body, shared_data)
+    """Called upon dying in the game.
+    Args:
+        body: body of message, should be the encoded game state
+        shared_data: Dictionary of shared data between server and client.
+    """
+    receive_game_state(body, shared_data)
