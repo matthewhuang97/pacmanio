@@ -30,9 +30,9 @@ $ python server.py <host> <port>
 
 where `<host>` is your local area IP address (e.g., 10.252.215.26), and `port` is the port number you would like to use. 
 
-Example: `python server/server.py 10.252.215.26 8090`
+Example: `python server.py 10.252.215.26 8090`
 
-However, if you would like to run it locally instead, simply use `''` as your `<host>`, for example `python server/server.py '' 8090`
+However, if you would like to run it locally instead, simply use `''` as your `<host>`, for example `python server.py '' 8090`
 
 To find your local area IP address: 
 - Go to http://www.whatsmyip.org/more-info-about-you/. On the third line it should say "Internal LAN IP: xx.xxx.xxx.xx". This is the IP address you should use.
@@ -49,9 +49,9 @@ $ sudo python client.py hostname port
 
 where `hostname` is the address of the server that you would like to connect to and `port` is the number of the port. These must match exactly with the host and port number used by the server. 
 
-Example: `python client/client.py 10.252.215.26 8090`
+Example: `python client.py 10.252.215.26 8090`
 
-If you are trying to connect locally, you can use `python client/client.py '' 8090`.
+If you are trying to connect locally, you can use `python client.py '' 8090`.
 
 ## Protocol Details
 
