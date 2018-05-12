@@ -100,6 +100,13 @@ class Game:
 
     # Print stretching out column-wise by factor of 2, length-wise by factor of 3
     def draw_board(self, scr, curr_username):
+        """
+        Draws board using curses.
+
+        Args:
+            scr: screen to draw it on
+            curr_username: Username of current player.
+        """
         for r in range(self.num_rows):
             for c in range(self.num_cols):
                 char_print = str(self.board[r][c])
@@ -130,10 +137,16 @@ class Game:
                             curses.color_pair(int(color)) | curses.A_BLINK)
 
     def draw_screen(self, scr, curr_username):
+        """Draws both the screen and leaderboard.
+        Args:
+            scr: screen to draw it on
+            curr_username: Username of current player.
+        """
         self.draw_board(scr, curr_username)
         self.draw_leaderboard(scr)
 
     def random_empty_location(self):
+        """Selects a random empty location from the board."""
         while True:
             r = random.randint(0, self.num_rows - 1)
             c = random.randint(0, self.num_cols - 1)
@@ -141,11 +154,26 @@ class Game:
                 return (r, c)
 
     def wrap_pos(self, pos):
+        """Wraps position if the Pacman goes off the edge of the screen.
+
+        Args:
+            pos: tuple
+
+        Returns: 
+            tuple, position wrapped around if it went off screen.
+        """
         row, col = pos
         return (row % self.num_rows, col % self.num_cols)
 
-    # Check if position is in bounds
     def position_is_valid(self, pos):
+        """Check if position is in bounds or collision.
+        Args:
+            pos: tuple
+
+        Returns:
+            bool, whether or not the position is valid.
+
+        """
         row, col = pos
 
         # Check if out of bounds, or collision
@@ -153,8 +181,18 @@ class Game:
             return False
         return True
 
-    # Returns a tuple (pos is movable, # of points gained OR None)
     def position_can_move_to(self, player, pos):
+        """Retuns whether or not player can move to pos and any gains in score.
+
+        Args:
+            player: player to move
+            pos: new position to move player to
+
+        Returns:
+            tuple: first element is bool (whether or not it's possible to move
+            to pos), second element is number of points gained or None if it's 
+            not possible to move there.
+        """
         if not self.position_is_valid(pos):
             return False, None
 
@@ -173,10 +211,24 @@ class Game:
         return False, None
 
     def process_squares(self, old, new, player):
+        """Updates player based on old and new squares.
+
+        Args:
+            old: element of the old game square occupied
+            new: element of new game square to occupy
+            player: player moving from old to new
+
+        """
         if new == BIG_DOT:
             player.superspeed_ticks = 50
 
     def spawn_player(self, username):
+        """Creates a new player at random location.
+
+        Args:
+            username: Username of new player to create.
+
+        """
         r, c = self.random_empty_location()
         new_player = Player(self, username, (r,c))
         self.leaderboard[username] = 0
@@ -185,9 +237,11 @@ class Game:
         return new_player
 
     def change_player_direction(self, username, next_direction):
+        """Changes player direction."""
         self.players[username].change_direction(next_direction)
 
     def restart_player(self, player):
+        """Restarts player at a new random position."""
         old_r, old_c = player.position
         self.board[old_r][old_c] = EMPTY
 
@@ -200,10 +254,21 @@ class Game:
         player.alive = True
 
     def move_player(self, player):
+        """Moves player.
+
+        Based on player.direction, updates player location. Updates game board
+        accordingly. 
+
+        When there are changes in direction requested, only changes the player
+        direction if it's not the opposite direction as the current direction
+        (as standard for Pacman). 
+
+        Updates leaderboard accordingly.
+        """
         if player.superspeed_ticks == 0 and self.num_ticks % 2 == 1:
             return
 
-        row, col = player.position # most definitely bad design lol fix this later
+        row, col = player.position
 
         # If player can go in next_direction, take that direction. Otherwise, use old direction
         new_pos = direction_to_lambda[player.next_direction]((row, col))
@@ -229,12 +294,18 @@ class Game:
             player.superspeed_ticks -= 1
 
     def remove_player(self, player):
+        """Removes player from the game once they disconnect.
+        Args:
+            player: Username of new player to delete.
+
+        """
         row, col = player.position
         self.board[row][col] = EMPTY
         del self.leaderboard[player.username]
         del self.players[player.username]
 
     def tick(self):
+        """Advances game forward by one step."""
         for _, player in self.players.items():
             if player.alive:
                 self.move_player(player)
